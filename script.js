@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "5.3"; // Retrait du proxy pour les URL de decks (bloqué par MarvelCDB)
+const GAME_VERSION = "5.4"; // Retrait du proxy pour les URL de decks (bloqué par MarvelCDB)
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -277,32 +277,19 @@ async function fetchAPI(cardCode) {
         }
     }
 
+    // 3. Si la carte est totalement introuvable avec son code
     if (!cardData) {
         console.warn(`Carte introuvable en local : ${cardCode}`);
         return null;
     }
 
-    // Gestion des alt-arts (duplicate_of) en local
+    // 4. Gestion des alt-arts (duplicate_of) en local
     if (cardData.duplicate_of) {
         return await fetchAPI(cardData.duplicate_of);
     }
 
-    // --- GESTION DES RÉÉDITIONS EN LOCAL ---
-    const playerTypes = ['ally', 'event', 'resource', 'upgrade', 'support'];
-    if (cardData.name && playerTypes.includes(cardData.type_code)) {
-        let matches = Object.values(localDatabase).filter(c => 
-            c.name === cardData.name && 
-            c.type_code === cardData.type_code &&
-            c.subname === cardData.subname
-        );
-        
-        if (matches.length > 0) {
-            matches.sort((a, b) => parseInt(a.code) - parseInt(b.code));
-            if (matches[0].code !== cardData.code) {
-                return matches[0];
-            }
-        }
-    }
+    // La carte est trouvée et valide, on la retourne directement !
+    // (Le bloc problématique qui remplaçait la carte par sa plus ancienne réédition a été supprimé)
     
     return cardData;
 }
