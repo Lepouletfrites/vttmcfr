@@ -168,7 +168,9 @@ updateCamera();
 // --- GESTION DE L'HISTORIQUE ---
 function updateUndoButton() {
     if (btnUndo) {
-        if (stateHistory.length > 1) {
+        const steps = stateHistory.length - 1;
+        if (steps > 0) {
+            btnUndo.innerText = `↩️ Annuler (${steps})`;
             btnUndo.classList.remove('hidden');
         } else {
             btnUndo.classList.add('hidden');
@@ -177,17 +179,65 @@ function updateUndoButton() {
 }
 
 function undo() {
-    if (stateHistory.length > 1) {
-        isUndoing = true;
-        stateHistory.pop(); 
-        const prevStateString = stateHistory[stateHistory.length - 1];
-        
-        localStorage.setItem('marvelVTT_save', prevStateString);
-        loadGameState();
-        
-        updateUndoButton();
-        setTimeout(() => { isUndoing = false; }, 100);
-    }
+    if (stateHistory.length <= 1) return;
+    isUndoing = true;
+
+    // Capture les positions actuelles des cartes (par identifiant stable) pour pouvoir
+    // les animer visuellement vers leur position d'avant, une fois l'état précédent rechargé.
+    const prevRects = new Map();
+    document.querySelectorAll('.card[data-instance-id]').forEach(card => {
+        if (card.classList.contains('in-hand')) return; // la main est un flux, pas de position à animer
+        prevRects.set(card.dataset.instanceId, card.getBoundingClientRect());
+    });
+
+    stateHistory.pop();
+    const prevStateString = stateHistory[stateHistory.length - 1];
+
+    localStorage.setItem('marvelVTT_save', prevStateString);
+    loadGameState();
+
+    // Remise à jour de l'état critique indépendante du rendu (voir ci-dessous) : si l'onglet
+    // est en arrière-plan, requestAnimationFrame peut ne jamais se déclencher, et on ne veut
+    // surtout pas que ça bloque isUndoing à `true` pour toujours.
+    updateUndoButton();
+    setTimeout(() => { isUndoing = false; }, 100);
+
+    // Animation "snap-back" (purement cosmétique) : si l'onglet n'est pas visible/rendu,
+    // elle ne jouera simplement pas, sans impact sur le fonctionnement de l'undo lui-même.
+    requestAnimationFrame(() => {
+        document.querySelectorAll('.card[data-instance-id]').forEach(card => {
+            if (card.classList.contains('in-hand')) return;
+
+            const oldRect = prevRects.get(card.dataset.instanceId);
+            if (!oldRect) {
+                // Carte réapparue (ex: une défausse annulée) : un flash rapide attire l'oeil dessus.
+                card.classList.add('card-just-restored');
+                setTimeout(() => card.classList.remove('card-just-restored'), 500);
+                return;
+            }
+
+            const newRect = card.getBoundingClientRect();
+            // Les rects sont en pixels écran (post-zoom) ; la translation qu'on applique est, elle,
+            // dans le repère local de la carte (avant le scale du plateau) : il faut donc diviser par scale.
+            const dx = (oldRect.left - newRect.left) / scale;
+            const dy = (oldRect.top - newRect.top) / scale;
+            if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+
+            const isExhausted = card.classList.contains('exhausted');
+            const restTransform = isExhausted ? 'rotate(90deg)' : '';
+
+            card.style.transform = `translate(${dx}px, ${dy}px) ${restTransform}`;
+
+            requestAnimationFrame(() => {
+                card.style.transition = 'transform 0.4s cubic-bezier(.2,.8,.2,1)';
+                card.style.transform = restTransform;
+                card.addEventListener('transitionend', () => {
+                    card.style.transition = '';
+                    card.style.transform = '';
+                }, { once: true });
+            });
+        });
+    });
 }
 
 if (btnUndo) {
@@ -1237,6 +1287,62 @@ async function spawnAndDragCard(type, cx, cy) {
     cardDOM.dispatchEvent(fakeEvent);
 }
 
+// --- RÉCUPÉRATION RAPIDE DEPUIS UNE DÉFAUSSE (clic = remettre en jeu, glisser = suivre le curseur) ---
+function getDiscardArrayForType(type) {
+    if (type === 'player') return discardPile;
+    if (type === 'encounter') return encounterDiscardPile;
+    if (type === 'hero-sec') return heroSecDiscard;
+    if (type.startsWith('villain-sec-')) {
+        const vIndex = parseInt(type.split('-')[2]);
+        return villainSecDiscards[vIndex];
+    }
+    return null;
+}
+
+async function drawFromDiscard(type) {
+    const discard = getDiscardArrayForType(type);
+    if (!discard || discard.length === 0) return;
+
+    const code = discard.pop();
+    updateDeckCounters();
+
+    const data = await fetchAPI(code);
+    if (!data) { discard.push(code); updateDeckCounters(); return; }
+
+    const cardDOM = buildCardDOM(data);
+
+    // Toujours sur le plateau (jamais dans la main) : c'est une carte déjà résolue qu'on
+    // remet en jeu, pas une nouvelle pioche. L'utilisateur peut ensuite la glisser en main si besoin.
+    const rect = boardWrapper.getBoundingClientRect();
+    const offsetX = (Math.random() * 60 - 30);
+    const offsetY = (Math.random() * 60 - 30);
+    const spawnX = (rect.width / 2 - boardX + offsetX) / scale;
+    const spawnY = (rect.height / 2 - boardY + offsetY) / scale;
+    putOnBoardAt(cardDOM, spawnX, spawnY, false); // face visible : elle a déjà été révélée avant sa défausse
+}
+
+async function spawnAndDragFromDiscard(type, cx, cy) {
+    const discard = getDiscardArrayForType(type);
+    if (!discard || discard.length === 0) return;
+
+    const code = discard.pop();
+    updateDeckCounters();
+
+    const data = await fetchAPI(code);
+    if (!data) { discard.push(code); updateDeckCounters(); return; }
+
+    const cardDOM = buildCardDOM(data);
+
+    const rect = boardWrapper.getBoundingClientRect();
+    const trueX = (cx - rect.left - boardX) / scale - 60;
+    const trueY = (cy - rect.top - boardY) / scale - 84;
+
+    putOnBoardAt(cardDOM, trueX, trueY, false);
+
+    const fakeEvent = new MouseEvent('mousedown', { clientX: cx, clientY: cy, bubbles: true });
+    cardDOM.dispatchEvent(fakeEvent);
+}
+
 // --- GESTION DU DRAG DEPUIS LES PIOCHES ---
 function setupDeckInteractions(deckId, pileType) {
     const deckDom = document.getElementById(deckId);
@@ -1291,6 +1397,64 @@ function setupDeckInteractions(deckId, pileType) {
     window.addEventListener('mouseup', handleUp);
     
     deckDom.addEventListener('touchstart', handleDown, {passive: true});
+    window.addEventListener('touchmove', handleMove, {passive: true});
+    window.addEventListener('touchend', handleUp, {passive: true});
+}
+
+// --- GESTION DU DRAG DEPUIS LES DÉFAUSSES (récupère la dernière carte défaussée) ---
+function setupDiscardInteractions(pileId, pileType) {
+    const pileDom = document.getElementById(pileId);
+    if (!pileDom) return;
+
+    let startX, startY, isDown = false, dragged = false;
+    let lastTouchTime = 0;
+    let pressStartTime = 0;
+
+    function handleDown(e) {
+        pressStartTime = Date.now();
+
+        if (e.type.startsWith('touch')) lastTouchTime = Date.now();
+        if (e.type.startsWith('mouse') && Date.now() - lastTouchTime < 500) return;
+        if (e.button === 2) return;
+
+        isDown = true; dragged = false;
+        startX = e.clientX || (e.touches && e.touches[0].clientX);
+        startY = e.clientY || (e.touches && e.touches[0].clientY);
+    }
+
+    function handleMove(e) {
+        if (!isDown) return;
+        let cx = e.clientX || (e.touches && e.touches[0].clientX);
+        let cy = e.clientY || (e.touches && e.touches[0].clientY);
+        if (!dragged && (Math.abs(cx - startX) > 10 || Math.abs(cy - startY) > 10)) {
+            dragged = true;
+            isDown = false;
+            spawnAndDragFromDiscard(pileType, cx, cy);
+        }
+    }
+
+    function handleUp(e) {
+        if (e.type.startsWith('mouse') && Date.now() - lastTouchTime < 500) return;
+
+        let pressDuration = Date.now() - pressStartTime;
+
+        if (pressDuration > 400) {
+            isDown = false;
+            return;
+        }
+
+        if (isDown && !dragged) {
+            drawFromDiscard(pileType);
+            saveGameState();
+        }
+        isDown = false;
+    }
+
+    pileDom.addEventListener('mousedown', handleDown);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+
+    pileDom.addEventListener('touchstart', handleDown, {passive: true});
     window.addEventListener('touchmove', handleMove, {passive: true});
     window.addEventListener('touchend', handleUp, {passive: true});
 }
@@ -1367,6 +1531,9 @@ function updateCardOrientation(card) {
 function buildCardDOM(cardData, explicitBackUrl = null) {
     const card = document.createElement('div');
     card.classList.add('card');
+    // Identifiant stable qui survit à la sauvegarde/rechargement (utilisé pour l'animation
+    // "snap-back" de l'undo : il permet de retrouver la même carte avant/après un rechargement complet).
+    card.dataset.instanceId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
     const isEncounter = cardData.faction_code === 'encounter' || cardData.type_code === 'minion' || cardData.type_code === 'side_scheme' || cardData.type_code === 'obligation' || cardData.type_code === 'villain';
     let defaultBack = isEncounter ? CARD_BACKS.encounter : CARD_BACKS.player;
@@ -2546,6 +2713,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupDeckInteractions('board-hero-deck', 'hero-sec');
     for(let i = 0; i < 3; i++) {
         setupDeckInteractions('board-villain-deck-' + i, 'villain-sec-' + i);
+    }
+
+    setupDiscardInteractions('discard-pile', 'player');
+    setupDiscardInteractions('encounter-discard-pile', 'encounter');
+    setupDiscardInteractions('board-hero-discard', 'hero-sec');
+    for(let i = 0; i < 3; i++) {
+        setupDiscardInteractions('board-villain-discard-' + i, 'villain-sec-' + i);
     }
 
     loadGameState();
