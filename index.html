@@ -113,6 +113,9 @@
 
     <!-- Menus Contextuels et Modales -->
     <div id="context-menu" class="hidden">
+        <div class="menu-item hidden" id="menu-play-random">🎲 Jouer une carte au hasard de la main</div>
+        <div class="menu-separator hidden" id="menu-hand-separator"></div>
+
         <div class="menu-item menu-item-gold hidden" id="menu-next-scheme">⏭️ Passer à la Manigance suivante</div>
         <div class="menu-item menu-item-danger hidden" id="menu-next-villain">⏭️ Passer au Stade suivant (Méchant)</div>
         <div class="menu-item hidden" id="menu-add-accel">➕ Ajouter Accélération</div>
@@ -196,6 +199,13 @@
                     </div>
 
                     <button id="btn-load-villain" class="btn-block btn-nemesis btn-mt">Déployer le Scénario</button>
+                </div>
+
+                <div class="menu-section">
+                    <h4 class="menu-section-accent">🔎 Ajouter une Carte</h4>
+                    <p class="menu-hint">Pour ajouter en jeu une carte qui n'est pas dans le deck (ex: token spécial, carte manquante). Tapez au moins 3 lettres du nom pour lancer la recherche.</p>
+                    <input type="text" id="card-search-input" class="deck-url-input" placeholder="🔍 Nom de la carte (3 lettres min.)...">
+                    <div id="card-search-results" class="villain-picker hidden"></div>
                 </div>
 
                 <div class="menu-section">

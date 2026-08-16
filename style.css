@@ -288,12 +288,14 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
    JETONS & STATUTS
    ========================================== */
 .token {
-    position: absolute; font-weight: 700; width: 26px; height: 26px; font-size: 0.85em;
+    position: absolute; font-weight: 800; width: 30px; height: 30px; font-size: 1em;
     border-radius: 50%; display: flex; justify-content: center; align-items: center;
-    border: 2px solid white; z-index: 10; pointer-events: none; box-shadow: var(--shadow-sm);
+    border: 3px solid white; z-index: 10; pointer-events: none;
+    box-shadow: var(--shadow-md), 0 0 0 1px rgba(0,0,0,0.55);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
 }
 .damage-token { top: -8px; right: -8px; background-color: var(--accent-red); color: white; }
-.threat-token { top: -8px; left: -8px; background-color: var(--accent-gold); color: #2c3e50; }
+.threat-token { top: -8px; left: -8px; background-color: var(--accent-gold); color: #2c1a00; }
 .generic-token { top: -8px; left: 50%; transform: translateX(-50%); background-color: var(--accent-primary); color: white; }
 .acceleration-token { background-color: var(--accent-orange); color: white; }
 
@@ -302,7 +304,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
 .stunned-container { left: -8px; }
 .confused-container { left: 50%; transform: translateX(-50%); }
 
-.status-token { font-weight: 700; font-size: 0.6em; height: 18px; padding: 0 6px; border-radius: 999px; display: flex; justify-content: center; align-items: center; border: 2px solid white; box-shadow: var(--shadow-sm); color: white; }
+.status-token {
+    font-weight: 800; font-size: 0.68em; height: 19px; padding: 0 7px; border-radius: 999px;
+    display: flex; justify-content: center; align-items: center; border: 2.5px solid white;
+    box-shadow: var(--shadow-md), 0 0 0 1px rgba(0,0,0,0.55); color: white; letter-spacing: 0.02em;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+}
 .status-token-tough { background-color: var(--accent-orange); }
 .status-token-stunned { background-color: var(--accent-purple); }
 .status-token-confused { background-color: var(--accent-green); }
@@ -503,7 +510,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
     .card.landscape { width: 115px; height: 82px; }
     .card.in-hand { width: 58px; height: 81px; }
     .card.landscape.in-hand { width: 81px; height: 58px; }
-    .token { width: 20px; height: 20px; font-size: 0.7em; }
+    .token { width: 23px; height: 23px; font-size: 0.8em; border-width: 2px; }
+    .status-token { font-size: 0.62em; height: 16px; padding: 0 5px; }
     .modal-content { width: 95%; padding: 12px; }
     .inspect-card-item { width: 80px; }
     #context-menu, #pile-context-menu { min-width: 200px; font-size: 1em; }

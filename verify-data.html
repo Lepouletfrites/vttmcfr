@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vérification de la Base de Données - Marvel Champions</title>
+<style>
+    :root {
+        --bg-app: #14161c;
+        --bg-panel: #1d2028;
+        --bg-row: #23262f;
+        --border: #333744;
+        --text: #e6e6ea;
+        --text-dim: #9a9daa;
+        --ok: #3ddc84;
+        --warn: #ffb020;
+        --err: #ff5c5c;
+        --accent: #6c8cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+        background: var(--bg-app);
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 24px;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    p.subtitle { color: var(--text-dim); margin-top: 0; margin-bottom: 20px; }
+    .summary {
+        display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;
+    }
+    .summary-card {
+        background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px;
+        padding: 12px 18px; min-width: 160px;
+    }
+    .summary-card .num { font-size: 1.6rem; font-weight: 700; }
+    .summary-card .label { color: var(--text-dim); font-size: 0.8rem; }
+    .summary-card.err .num { color: var(--err); }
+    .summary-card.warn .num { color: var(--warn); }
+    .summary-card.ok .num { color: var(--ok); }
+
+    section { margin-bottom: 28px; }
+    section h2 {
+        font-size: 1.05rem; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+        color: var(--accent);
+    }
+    .entry {
+        background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
+        padding: 10px 14px; margin-bottom: 8px;
+    }
+    .entry-title { font-weight: 600; margin-bottom: 4px; }
+    .entry-title .id-tag { color: var(--text-dim); font-weight: 400; font-size: 0.85rem; }
+    .tag {
+        display: inline-block; padding: 1px 8px; border-radius: 100px; font-size: 0.75rem;
+        margin-right: 6px; margin-bottom: 2px;
+    }
+    .tag.missing { background: rgba(255,92,92,0.15); color: var(--err); border: 1px solid rgba(255,92,92,0.4); }
+    .tag.extra { background: rgba(255,176,32,0.15); color: var(--warn); border: 1px solid rgba(255,176,32,0.4); }
+    .row-line { margin-top: 4px; font-size: 0.88rem; color: var(--text-dim); }
+    .empty-msg { color: var(--ok); font-size: 0.9rem; }
+    button#run-btn {
+        background: var(--accent); color: #fff; border: none; border-radius: 8px;
+        padding: 10px 18px; font-size: 0.95rem; cursor: pointer; margin-bottom: 20px;
+    }
+    button#run-btn:hover { opacity: 0.9; }
+    code { background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<h1>🔍 Vérification de la Base de Données</h1>
+<p class="subtitle">Croise <code>gamedata.js</code> (méchants / sets modulaires) avec <code>cards.js</code> pour repérer les étapes, manigances ou sets manquants. Outil de développement local — ne modifie rien, aucun serveur requis.</p>
+
+<button id="run-btn">▶ Lancer la vérification</button>
+
+<div id="results"></div>
+
+<script src="gamedata.js"></script>
+<script src="cards.js"></script>
+<script>
+function runCheck() {
+    const results = document.getElementById('results');
+    results.innerHTML = '';
+
+    // Index rapide de toutes les cartes par card_set_code (O(1) lookup, pas de ralentissement)
+    const byCardSet = new Map();
+    for (const card of CARDS_DATA) {
+        const key = card.card_set_code;
+        if (!key) continue;
+        if (!byCardSet.has(key)) byCardSet.set(key, []);
+        byCardSet.get(key).push(card);
+    }
+    const allCodes = new Set(CARDS_DATA.map(c => c.code));
+    const byCode = new Map(CARDS_DATA.map(c => [c.code, c]));
+
+    // Sur MarvelCDB, un suffixe de lettre en fin de code (a/b/c) désigne toujours une face
+    // alternative de la MÊME carte physique (recto/verso, ou état avant/après transformation),
+    // jamais une carte différente. cards.js contient souvent la même carte sous plusieurs formes
+    // (ex: "21114" fusionné en double_sided ET "21114a"+"21114b" scindés en deux entrées).
+    // On regroupe donc par "code de base" pour ne compter qu'une seule fois chaque carte physique.
+    function baseCode(code) {
+        return code.replace(/[a-z]$/, '');
+    }
+    // Regroupe une liste de cartes (même card_set_code + même type_code) en "cartes logiques".
+    // Retourne un tableau de groupes, chaque groupe étant la liste des codes qui désignent la même carte physique.
+    function groupLogicalCards(cards) {
+        const byBase = new Map();
+        for (const c of cards) {
+            const b = baseCode(c.code);
+            if (!byBase.has(b)) byBase.set(b, []);
+            byBase.get(b).push(c.code);
+        }
+        return Array.from(byBase.values());
+    }
+
+    let villainIssues = 0, modularIssues = 0, heroIssues = 0;
+    const villainSection = document.createElement('section');
+    villainSection.innerHTML = '<h2>🎯 Méchants — Étapes (stages) et Manigances (schemes)</h2>';
+    let villainHasEntries = false;
+
+    for (const v of MARVEL_DB.villains) {
+        if (!v.card_set_code) continue; // pas encore de card_set_code renseigné, rien à vérifier
+        const cardsInSet = byCardSet.get(v.card_set_code) || [];
+        const stageCards = cardsInSet.filter(c => c.type_code === 'villain');
+        const schemeCards = cardsInSet.filter(c => c.type_code === 'main_scheme');
+        const stageGroups = groupLogicalCards(stageCards);
+        const schemeGroups = groupLogicalCards(schemeCards);
+        const allStageCodes = stageCards.map(c => c.code);
+        const allSchemeCodes = schemeCards.map(c => c.code);
+
+        const declaredStages = v.stages || [];
+        const declaredSchemes = v.schemes || [];
+
+        // Manquant = aucune carte du groupe logique (recto ou verso) n'est déclarée
+        const missingStages = stageGroups.filter(g => !g.some(c => declaredStages.includes(c))).map(g => g[0]);
+        const missingSchemes = schemeGroups.filter(g => !g.some(c => declaredSchemes.includes(c))).map(g => g[0]);
+        // Erroné = code déclaré qui n'existe même pas dans cards.js pour ce set
+        const extraStages = declaredStages.filter(c => !allStageCodes.includes(c));
+        const extraSchemes = declaredSchemes.filter(c => !allSchemeCodes.includes(c));
+
+        // Cas particulier : card_set_code renseigné mais aucune carte trouvée dans cards.js (typo probable)
+        const noCardsFound = cardsInSet.length === 0;
+
+        if (missingStages.length || extraStages.length || missingSchemes.length || extraSchemes.length || noCardsFound) {
+            villainHasEntries = true;
+            villainIssues++;
+            const div = document.createElement('div');
+            div.className = 'entry';
+            let html = `<div class="entry-title">${v.name} <span class="id-tag">(id: ${v.id}, card_set_code: ${v.card_set_code})</span></div>`;
+
+            if (noCardsFound) {
+                html += `<div class="row-line"><span class="tag missing">card_set_code introuvable</span> Aucune carte dans cards.js ne porte ce card_set_code — vérifier l'orthographe.</div>`;
+            } else {
+                if (missingStages.length) html += `<div class="row-line">Étapes manquantes : ${missingStages.map(c => `<span class="tag missing">${c}</span>`).join(' ')}</div>`;
+                if (extraStages.length) html += `<div class="row-line">Étapes déclarées mais introuvables dans cards.js : ${extraStages.map(c => `<span class="tag extra">${c}</span>`).join(' ')}</div>`;
+                if (missingSchemes.length) html += `<div class="row-line">Manigances manquantes : ${missingSchemes.map(c => `<span class="tag missing">${c}</span>`).join(' ')}</div>`;
+                if (extraSchemes.length) html += `<div class="row-line">Manigances déclarées mais introuvables dans cards.js : ${extraSchemes.map(c => `<span class="tag extra">${c}</span>`).join(' ')}</div>`;
+            }
+            div.innerHTML = html;
+            villainSection.appendChild(div);
+        }
+    }
+    if (!villainHasEntries) {
+        const p = document.createElement('p');
+        p.className = 'empty-msg';
+        p.textContent = '✓ Tous les méchants avec un card_set_code ont leurs étapes et manigances complètes.';
+        villainSection.appendChild(p);
+    }
+    results.appendChild(villainSection);
+
+    // --- Sets modulaires : vérifie que le card_set_code correspond bien à des cartes existantes ---
+    const modularSection = document.createElement('section');
+    modularSection.innerHTML = '<h2>🧩 Sets Modulaires — card_set_code introuvables</h2>';
+    let modularHasEntries = false;
+    for (const m of MARVEL_DB.modulars) {
+        if (!m.card_set_code) continue;
+        const cardsInSet = byCardSet.get(m.card_set_code) || [];
+        if (cardsInSet.length === 0) {
+            modularHasEntries = true;
+            modularIssues++;
+            const div = document.createElement('div');
+            div.className = 'entry';
+            div.innerHTML = `<div class="entry-title">${m.name} <span class="id-tag">(id: ${m.id})</span></div>
+                <div class="row-line"><span class="tag missing">card_set_code: ${m.card_set_code}</span> Aucune carte trouvée — vérifier l'orthographe exacte sur MarvelCDB.</div>`;
+            modularSection.appendChild(div);
+        }
+    }
+    if (!modularHasEntries) {
+        const p = document.createElement('p');
+        p.className = 'empty-msg';
+        p.textContent = '✓ Tous les sets modulaires ont un card_set_code valide.';
+        modularSection.appendChild(p);
+    }
+    results.appendChild(modularSection);
+
+    // --- Héros : vérifie que hero_code renseigné existe bien dans cards.js ---
+    const heroSection = document.createElement('section');
+    heroSection.innerHTML = '<h2>🦸 Héros — hero_code introuvables</h2>';
+    let heroHasEntries = false;
+    for (const h of MARVEL_DB.heroes) {
+        if (!h.hero_code) continue;
+        if (!allCodes.has(h.hero_code)) {
+            heroHasEntries = true;
+            heroIssues++;
+            const div = document.createElement('div');
+            div.className = 'entry';
+            div.innerHTML = `<div class="entry-title">${h.name} <span class="id-tag">(id: ${h.id})</span></div>
+                <div class="row-line"><span class="tag missing">hero_code: ${h.hero_code}</span> Ce code n'existe pas dans cards.js.</div>`;
+            heroSection.appendChild(div);
+        }
+    }
+    if (!heroHasEntries) {
+        const p = document.createElement('p');
+        p.className = 'empty-msg';
+        p.textContent = '✓ Tous les hero_code renseignés existent dans cards.js.';
+        heroSection.appendChild(p);
+    }
+    results.appendChild(heroSection);
+
+    // --- Résumé en haut ---
+    const summary = document.createElement('div');
+    summary.className = 'summary';
+    summary.innerHTML = `
+        <div class="summary-card ${villainIssues ? 'err' : 'ok'}"><div class="num">${villainIssues}</div><div class="label">Méchants avec problème</div></div>
+        <div class="summary-card ${modularIssues ? 'warn' : 'ok'}"><div class="num">${modularIssues}</div><div class="label">Sets modulaires invalides</div></div>
+        <div class="summary-card ${heroIssues ? 'warn' : 'ok'}"><div class="num">${heroIssues}</div><div class="label">Héros invalides</div></div>
+        <div class="summary-card ok"><div class="num">${CARDS_DATA.length}</div><div class="label">Cartes indexées</div></div>
+    `;
+    results.prepend(summary);
+}
+
+document.getElementById('run-btn').addEventListener('click', runCheck);
+runCheck(); // lancement automatique à l'ouverture de la page
+</script>
+
+</body>
+</html>

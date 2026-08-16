@@ -43,6 +43,8 @@ const villainPicker = document.getElementById('villain-picker');
 let selectedVillainId = null;
 const difficultySelect = document.getElementById('difficulty-select');
 const btnLoadVillain = document.getElementById('btn-load-villain');
+const cardSearchInput = document.getElementById('card-search-input');
+const cardSearchResults = document.getElementById('card-search-results');
 
 // Piles et zones
 const deckElement = document.getElementById('deck');
@@ -300,6 +302,71 @@ function filterVillainPicker() {
 
 if (villainSearchInput) {
     villainSearchInput.addEventListener('input', filterVillainPicker);
+}
+
+// --- RECHERCHE DE CARTE (AJOUT MANUEL EN JEU) ---
+// N'affiche des résultats qu'à partir de 3 lettres pour éviter de générer des milliers
+// de vignettes d'un coup (la base locale contient plusieurs milliers de cartes).
+const CARD_SEARCH_MIN_LENGTH = 3;
+const CARD_SEARCH_MAX_RESULTS = 60;
+let cardSearchDebounce = null;
+
+function runCardSearch() {
+    if (!cardSearchResults) return;
+    const q = cardSearchInput.value.trim().toLowerCase();
+
+    if (q.length < CARD_SEARCH_MIN_LENGTH) {
+        cardSearchResults.innerHTML = '';
+        cardSearchResults.classList.add('hidden');
+        return;
+    }
+
+    const matches = Object.values(localDatabase).filter(c =>
+        (c.name && c.name.toLowerCase().includes(q)) ||
+        (c.real_name && c.real_name.toLowerCase().includes(q))
+    ).slice(0, CARD_SEARCH_MAX_RESULTS);
+
+    cardSearchResults.classList.remove('hidden');
+
+    if (matches.length === 0) {
+        cardSearchResults.innerHTML = '<div class="villain-picker-empty">Aucune carte trouvée.</div>';
+        return;
+    }
+
+    cardSearchResults.innerHTML = matches.map(c => `
+        <div class="villain-tile" data-code="${c.code}" title="${c.name}">
+            <img class="villain-tile-thumb" src="${getImageUrl(c)}" loading="lazy" alt="${c.name}" onerror="this.outerHTML='<div class=villain-tile-thumb>🃏</div>'">
+            <div class="villain-tile-name">${c.name}</div>
+        </div>
+    `).join('');
+
+    cardSearchResults.querySelectorAll('.villain-tile').forEach(tile => {
+        tile.addEventListener('click', () => addCardToGameByCode(tile.dataset.code));
+    });
+}
+
+async function addCardToGameByCode(code) {
+    const data = await fetchAPI(code);
+    if (!data) return;
+
+    const dom = buildCardDOM(data);
+    modalMenu.classList.add('hidden'); // ferme le menu pour voir la carte apparaître sur le plateau
+
+    const rect = boardWrapper.getBoundingClientRect();
+    const offsetX = (Math.random() * 60 - 30);
+    const offsetY = (Math.random() * 60 - 30);
+    const spawnX = (rect.width / 2 - boardX + offsetX) / scale;
+    const spawnY = (rect.height / 2 - boardY + offsetY) / scale;
+
+    putOnBoardAt(dom, spawnX, spawnY, false);
+    saveGameState();
+}
+
+if (cardSearchInput) {
+    cardSearchInput.addEventListener('input', () => {
+        clearTimeout(cardSearchDebounce);
+        cardSearchDebounce = setTimeout(runCardSearch, 150);
+    });
 }
 
 // ==========================================
@@ -1448,6 +1515,24 @@ function putInHand(cardElement) {
     handArea.appendChild(cardElement);
 }
 
+// Certains héros ont des effets qui demandent de jouer une carte au hasard de la main
+// (ex: "piochez et jouez une carte au hasard"). Sélectionne une carte en main au hasard
+// et la place sur le plateau, près du centre visible.
+function playRandomCardFromHand() {
+    const handCards = Array.from(handArea.querySelectorAll('.card.in-hand'));
+    if (handCards.length === 0) return;
+
+    const card = handCards[Math.floor(Math.random() * handCards.length)];
+
+    const rect = boardWrapper.getBoundingClientRect();
+    const offsetX = (Math.random() * 60 - 30);
+    const offsetY = (Math.random() * 60 - 30);
+    const spawnX = (rect.width / 2 - boardX + offsetX) / scale;
+    const spawnY = (rect.height / 2 - boardY + offsetY) / scale;
+
+    putOnBoardAt(card, spawnX, spawnY, false);
+}
+
 function discardCard(cardElement, forcedPile = null) {
     const code = cardElement.dataset.code; 
     const faction = cardElement.dataset.faction;
@@ -1563,13 +1648,21 @@ function setupCardInteractions(card) {
         
         let data = JSON.parse(card.dataset.cardData);
         let showSeparator = false;
-        
+
         menuNextScheme.classList.add('hidden');
         menuNextVillain.classList.add('hidden');
         menuProgressionSeparator.classList.add('hidden');
-        
+
         document.getElementById('menu-add-accel').classList.add('hidden');
         document.getElementById('menu-sub-accel').classList.add('hidden');
+
+        // Une carte en main n'a ni face cachée à retourner ni orientation à incliner ;
+        // à la place, certains héros ont besoin de jouer une carte au hasard de leur main.
+        const isInHand = card.classList.contains('in-hand');
+        document.getElementById('menu-flip').classList.toggle('hidden', isInHand);
+        document.getElementById('menu-exhaust').classList.toggle('hidden', isInHand);
+        document.getElementById('menu-play-random').classList.toggle('hidden', !isInHand);
+        document.getElementById('menu-hand-separator').classList.toggle('hidden', !isInHand);
 
         if (data.type_code === 'main_scheme') {
             document.getElementById('menu-add-accel').classList.remove('hidden');
@@ -1677,13 +1770,14 @@ function makeDraggable(element) {
     let isDragging = false, startX, startY;
     let lastTouchEnd = 0;
     let longPressTimer = null;
+    let isTouchInteraction = false;
 
     element.onmousedown = (e) => {
         if (Date.now() - lastTouchEnd < 500) return;
         if (e.target.closest('#phase-panel') || e.target.closest('#ui-panel')) return;
         if (e.button === 2) return;
         e.preventDefault(); e.stopPropagation();
-        isDragging = false; startX = e.clientX; startY = e.clientY;
+        isDragging = false; isTouchInteraction = false; startX = e.clientX; startY = e.clientY;
         document.onmouseup = closeDragElement;
         document.onmousemove = elementDrag;
     };
@@ -1691,6 +1785,7 @@ function makeDraggable(element) {
     element.addEventListener('touchstart', (e) => {
         if (e.target.closest('#phase-panel') || e.target.closest('#ui-panel')) return;
         isDragging = false;
+        isTouchInteraction = true;
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
 
@@ -1711,7 +1806,23 @@ function makeDraggable(element) {
     function elementTouchDrag(e) { handleMove(e.touches[0].clientX, e.touches[0].clientY, e); }
 
     function handleMove(clientX, clientY, e) {
-        if (!isDragging && (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5)) {
+        if (!isDragging) {
+            const dx = clientX - startX, dy = clientY - startY;
+            let shouldArmDrag = Math.abs(dx) > 5 || Math.abs(dy) > 5;
+
+            // Sur tactile, une carte EN MAIN doit pouvoir être défilée horizontalement
+            // (scroll natif de la main) sans être accidentellement soulevée du jeu :
+            // on n'engage le glissement que sur un mouvement clairement vertical.
+            if (isTouchInteraction && element.classList.contains('in-hand')) {
+                if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
+                    shouldArmDrag = true;
+                } else {
+                    return; // laisse le scroll natif de la main faire son travail (ou mouvement pas encore assez net)
+                }
+            }
+
+            if (!shouldArmDrag) return;
+
             isDragging = true;
             globalCardDragActive = true;
             clearTimeout(longPressTimer);
@@ -1808,6 +1919,26 @@ document.addEventListener('touchstart', (e) => {
 
 function hideAllMenus() { contextMenu.classList.add('hidden'); pileContextMenu.classList.add('hidden'); }
 
+// Clic droit sur la zone de main (en dehors d'une carte précise) : affiche uniquement
+// l'option "jouer une carte au hasard", utile pour certains effets de héros.
+handArea.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.card')) return; // laissé au menu contextuel de la carte elle-même
+    e.preventDefault(); e.stopPropagation();
+    hideAllMenus();
+    targetCard = null;
+
+    document.querySelectorAll('#context-menu .menu-item, #context-menu .menu-separator').forEach(el => el.classList.add('hidden'));
+    document.getElementById('menu-play-random').classList.remove('hidden');
+
+    contextMenu.classList.remove('hidden');
+
+    let clientX = e.clientX, clientY = e.clientY;
+    if (clientX + contextMenu.offsetWidth > window.innerWidth) clientX = window.innerWidth - contextMenu.offsetWidth - 5;
+    if (clientY + contextMenu.offsetHeight > window.innerHeight) clientY = window.innerHeight - contextMenu.offsetHeight - 5;
+    contextMenu.style.left = clientX + 'px';
+    contextMenu.style.top = clientY + 'px';
+});
+
 // --- RACCOURCIS CLAVIER ---
 // D : piocher une carte | Espace : phase suivante | E : incliner/redresser la carte survolée | F : retourner la carte survolée
 document.addEventListener('keydown', (e) => {
@@ -1837,6 +1968,11 @@ document.addEventListener('keydown', (e) => {
 
 document.getElementById('menu-exhaust').addEventListener('click', () => {
     toggleExhaustCard(targetCard);
+    hideAllMenus(); saveGameState();
+});
+
+document.getElementById('menu-play-random').addEventListener('click', () => {
+    playRandomCardFromHand();
     hideAllMenus(); saveGameState();
 });
 
