@@ -1571,7 +1571,7 @@ function buildCardDOM(cardData, explicitBackUrl = null) {
     card.dataset.backUrl = backUrl;
 
     card.innerHTML = `
-        <img src="${frontUrl}" class="card-front" alt="${cardData.name || 'Carte'}" loading="lazy" onerror="this.onerror=null; this.src='${CARD_BACKS_FALLBACK[isEncounter ? 'encounter' : 'player']}';"/>
+        <img src="${frontUrl}" class="card-front" alt="${cardData.name || 'Carte'}" loading="lazy"/>
         <div class="token damage-token hidden" style="top: 45%; left: 15%; transform: translate(-50%, -50%);">0</div>
         <div class="token threat-token hidden" style="top: 45%; left: 50%; transform: translate(-50%, -50%);">0</div>
         <div class="token generic-token hidden" style="top: 45%; left: 85%; transform: translate(-50%, -50%);">0</div>
@@ -1580,6 +1580,36 @@ function buildCardDOM(cardData, explicitBackUrl = null) {
         <div class="status-container stunned-container"></div>
         <div class="status-container confused-container"></div>
     `;
+
+    // Gestion du fallback pour les cartes avec variantes (ex: 01144 → 01144a → 01144b → 01144c)
+    const imgElement = card.querySelector('.card-front');
+    card.dataset.variantAttempts = '0';
+
+    imgElement.addEventListener('error', function handleImageError() {
+        const attempts = parseInt(card.dataset.variantAttempts) || 0;
+        card.dataset.variantAttempts = attempts + 1;
+
+        const baseCode = cardData.code.replace(/[a-z]$/, '');
+        const hasVariant = baseCode !== cardData.code; // true si le code finit par a/b/c
+        const variants = ['a', 'b', 'c'];
+
+        // Essayer les variantes (soit du code actuel si c'est une base, soit des autres variantes)
+        if (attempts < 3) {
+            const variant = variants[attempts];
+            const variantCode = baseCode + variant;
+            const variantCardData = localDatabase && localDatabase[variantCode];
+
+            if (variantCardData && variantCode !== cardData.code) {
+                const variantUrl = getImageUrl(variantCardData);
+                imgElement.src = variantUrl;
+                return;
+            }
+        }
+
+        // Fallback final : image de dos
+        imgElement.removeEventListener('error', handleImageError);
+        imgElement.src = CARD_BACKS_FALLBACK[isEncounter ? 'encounter' : 'player'];
+    });
 
     updateCardOrientation(card);
     setupCardInteractions(card);
