@@ -519,6 +519,21 @@ function buildDeckFromSetCode(setCode, excludeList = []) {
         if (card.card_set_code === setCode && !excludeList.includes(card.code)) {
             // On exclut les méchants et manigances principales par sécurité
             if (!['villain', 'main_scheme'].includes(card.type_code)) {
+                // Cas particulier (ex: Android Efficiency 01144) : certaines cartes ont une
+                // entrée "résumé" sans illustration propre (pas d'octgn_id), dont la quantité
+                // est déjà entièrement couverte par ses variantes a/b/c (copies physiques
+                // réelles, chacune avec sa propre illustration). Sans ce filtre, la carte se
+                // retrouve comptée en double dans le deck (résumé + variantes).
+                const baseCode = card.code.replace(/[a-z]$/, '');
+                const isBaseCode = baseCode === card.code;
+                if (isBaseCode && !card.octgn_id) {
+                    const coveredByVariants = ['a', 'b', 'c'].some(suffix => {
+                        const variant = localDatabase[baseCode + suffix];
+                        return variant && variant.octgn_id;
+                    });
+                    if (coveredByVariants) return;
+                }
+
                 for (let i = 0; i < (card.quantity || 1); i++) {
                     deck.push(card.code);
                 }
