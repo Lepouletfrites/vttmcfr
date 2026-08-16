@@ -159,19 +159,19 @@
                     <h4 class="menu-section-accent">🔗 Charger un Deck personnalisé</h4>
                     <input type="text" id="deck-url-input" class="deck-url-input" placeholder="Ex: URL MarvelCDB ou ID (ex: 63906)">
                     <button id="btn-load-custom-deck" class="btn-block btn-success">Charger via URL</button>
-                </div>
 
-                <div class="menu-section">
-                    <h4 class="menu-section-gold">🦸 Héros (Decks Préconstruits)</h4>
-                    <select id="hero-select" class="menu-select"></select>
-                    <button id="btn-load-hero" class="btn-block">Générer le deck Héros</button>
+                    <div id="saved-decks-wrap" class="hidden">
+                        <label class="menu-label saved-decks-label">Decks sauvegardés :</label>
+                        <div id="saved-decks-list" class="saved-decks-list"></div>
+                    </div>
                 </div>
 
                 <div class="menu-section">
                     <h4 class="menu-section-red">🎯 Mise en place du Scénario</h4>
 
                     <label class="menu-label">Méchant :</label>
-                    <select id="villain-select" class="menu-select"></select>
+                    <input type="text" id="villain-search" class="deck-url-input" placeholder="🔍 Rechercher un méchant...">
+                    <div id="villain-picker" class="villain-picker"></div>
 
                     <label class="menu-label">Set de Difficulté :</label>
                     <div class="difficulty-box">
@@ -196,6 +196,16 @@
                     </div>
 
                     <button id="btn-load-villain" class="btn-block btn-nemesis btn-mt">Déployer le Scénario</button>
+                </div>
+
+                <div class="menu-section">
+                    <h4 class="menu-section-accent">☁️ Sauvegarde Fichier (JSON)</h4>
+                    <p class="menu-hint">Exportez votre partie dans un fichier pour la reprendre sur un autre appareil, ou en cas de souci avec le navigateur.</p>
+                    <div class="menu-footer-actions">
+                        <button id="btn-export-save" class="btn-flex">⬇️ Exporter</button>
+                        <button id="btn-import-save" class="btn-flex">⬆️ Importer</button>
+                    </div>
+                    <input type="file" id="import-save-input" accept="application/json" class="hidden">
                 </div>
 
                 <div class="menu-footer-actions">

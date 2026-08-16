@@ -38,9 +38,9 @@ const btnSaveGame = document.getElementById('btn-save-game');
 // Nouveaux éléments du Menu Principal
 const btnLoadCustomDeck = document.getElementById('btn-load-custom-deck');
 const deckUrlInput = document.getElementById('deck-url-input');
-const heroSelect = document.getElementById('hero-select');
-const btnLoadHero = document.getElementById('btn-load-hero');
-const villainSelect = document.getElementById('villain-select');
+const villainSearchInput = document.getElementById('villain-search');
+const villainPicker = document.getElementById('villain-picker');
+let selectedVillainId = null;
 const difficultySelect = document.getElementById('difficulty-select');
 const btnLoadVillain = document.getElementById('btn-load-villain');
 
@@ -224,19 +224,8 @@ btnResetGame.addEventListener('click', () => {
 function initMenus() {
     if (typeof MARVEL_DB === 'undefined') return;
 
-    heroSelect.innerHTML = '<option value="">-- Sélectionner un Héros --</option>';
-    MARVEL_DB.heroes.forEach(h => {
-        if (h.deck && h.deck.length > 0) {
-            heroSelect.innerHTML += `<option value="${h.id}">${h.name}</option>`;
-        }
-    });
-
-    villainSelect.innerHTML = '<option value="">-- Sélectionner un Scénario --</option>';
-    MARVEL_DB.villains.forEach(v => {
-        if (v.card_set_code || (v.stages && v.stages.length > 0)) {
-            villainSelect.innerHTML += `<option value="${v.id}">${v.name}</option>`;
-        }
-    });
+    renderVillainPicker();
+    renderSavedDecks();
 
     const modularList = document.getElementById('modular-list');
     if (modularList) {
@@ -258,11 +247,69 @@ function initMenus() {
     }
 }
 
+// --- PICKER VISUEL DE MÉCHANTS ---
+async function renderVillainPicker() {
+    if (typeof MARVEL_DB === 'undefined' || !villainPicker) return;
+
+    const list = MARVEL_DB.villains.filter(v => v.card_set_code || (v.stages && v.stages.length > 0));
+    if (list.length === 0) {
+        villainPicker.innerHTML = '<div class="villain-picker-empty">Aucun méchant disponible.</div>';
+        return;
+    }
+
+    const tilesData = await Promise.all(list.map(async v => {
+        let thumbUrl = null;
+        const stageCode = v.stages && v.stages[0];
+        if (stageCode) {
+            const cardData = await fetchAPI(stageCode.replace(/[ab]$/, '')) || await fetchAPI(stageCode);
+            if (cardData) thumbUrl = getImageUrl(cardData);
+        }
+        return { v, thumbUrl };
+    }));
+
+    villainPicker.innerHTML = tilesData.map(({ v, thumbUrl }) => `
+        <div class="villain-tile" data-villain-id="${v.id}" data-name="${v.name.toLowerCase()}">
+            ${thumbUrl
+                ? `<img class="villain-tile-thumb" src="${thumbUrl}" loading="lazy" alt="${v.name}" onerror="this.outerHTML='<div class=villain-tile-thumb>🦹</div>'">`
+                : `<div class="villain-tile-thumb">🦹</div>`}
+            <div class="villain-tile-name">${v.name}</div>
+        </div>
+    `).join('');
+
+    villainPicker.querySelectorAll('.villain-tile').forEach(tile => {
+        tile.addEventListener('click', () => {
+            selectedVillainId = tile.dataset.villainId;
+            villainPicker.querySelectorAll('.villain-tile').forEach(t => t.classList.remove('selected'));
+            tile.classList.add('selected');
+        });
+        if (tile.dataset.villainId === selectedVillainId) tile.classList.add('selected');
+    });
+
+    filterVillainPicker();
+}
+
+function filterVillainPicker() {
+    if (!villainPicker || !villainSearchInput) return;
+    const q = villainSearchInput.value.trim().toLowerCase();
+    villainPicker.querySelectorAll('.villain-tile').forEach(tile => {
+        tile.classList.toggle('hidden', !tile.dataset.name.includes(q));
+    });
+}
+
+if (villainSearchInput) {
+    villainSearchInput.addEventListener('input', filterVillainPicker);
+}
+
 // ==========================================
 // 2. FONCTIONS DE TÉLÉCHARGEMENT DE CARTE (100% LOCAL)
 // ==========================================
+// Cache des résolutions de cartes : évite de refaire la recherche/recursion à chaque
+// appel (l'inspection d'une pile ou l'ouverture du picker de méchants peut en déclencher des dizaines).
+const fetchAPICache = new Map();
+
 async function fetchAPI(cardCode) {
     if (!localDatabase) return null;
+    if (fetchAPICache.has(cardCode)) return fetchAPICache.get(cardCode);
 
     // 1. Recherche exacte
     let cardData = localDatabase[cardCode];
@@ -279,6 +326,7 @@ async function fetchAPI(cardCode) {
     // 3. Si la carte est totalement introuvable avec son code
     if (!cardData) {
         console.warn(`Carte introuvable en local : ${cardCode}`);
+        fetchAPICache.set(cardCode, null);
         return null;
     }
 
@@ -286,14 +334,19 @@ async function fetchAPI(cardCode) {
     // On force systématiquement la résolution vers la carte d'origine : les réimpressions
     // partagent le même visuel/texte mais ne sont pas toujours illustrées dans notre base d'images.
     if (cardData.duplicate_of_code) {
-        return await fetchAPI(cardData.duplicate_of_code);
+        const resolved = await fetchAPI(cardData.duplicate_of_code);
+        fetchAPICache.set(cardCode, resolved);
+        return resolved;
     }
 
     // La carte est trouvée et valide, on la retourne directement !
-    // (Le bloc problématique qui remplaçait la carte par sa plus ancienne réédition a été supprimé)
-    
+    fetchAPICache.set(cardCode, cardData);
     return cardData;
 }
+
+// Cache des URLs d'image déjà calculées (évite de refaire la résolution de réimpression
+// et la concaténation de chaîne à chaque re-rendu/synchronisation de carte).
+const imageUrlCache = new Map();
 
 function getImageUrl(cardData) {
     if (!cardData) return '';
@@ -303,6 +356,8 @@ function getImageUrl(cardData) {
     if (cardData.duplicate_of_code && typeof localDatabase !== 'undefined' && localDatabase[cardData.duplicate_of_code]) {
         cardData = localDatabase[cardData.duplicate_of_code];
     }
+
+    if (imageUrlCache.has(cardData.code)) return imageUrlCache.get(cardData.code);
 
     let code = cardData.code;
     let imageCode = code;
@@ -325,13 +380,14 @@ function getImageUrl(cardData) {
     // --- DÉTECTION AUTOMATIQUE : Local vs En ligne ---
     const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
-    if (isLocal) {
+    const url = isLocal
         // 1. Si tu lances le fichier index.html directement depuis ton PC
-        return `ImageFr/${packName}/${localFileName}.jpg`;
-    } else {
+        ? `ImageFr/${packName}/${localFileName}.jpg`
         // 2. Si tu es sur GitHub Pages (En ligne)
-        return `https://raw.githubusercontent.com/Lepouletfrites/vttmcfr-images/main/ImageFr/${packName}/${localFileName}.jpg`;
-    }
+        : `https://raw.githubusercontent.com/Lepouletfrites/vttmcfr-images/main/ImageFr/${packName}/${localFileName}.jpg`;
+
+    imageUrlCache.set(cardData.code, url);
+    return url;
 }
 
 // ==========================================
@@ -360,34 +416,12 @@ async function getBaseCardCode(code) {
     return code;
 }
 
-btnLoadHero.addEventListener('click', async () => {
-    const hId = heroSelect.value;
-    if (!hId) return;
-    const heroDef = MARVEL_DB.heroes.find(h => h.id === hId);
-    if (!heroDef) return;
-
-    modalMenu.classList.add('hidden');
-    myDeck = [...heroDef.deck];
-    
-    let secDeck = heroDef.secondary_set_code ? buildDeckFromSetCode(heroDef.secondary_set_code, heroDef.start_on_board || []) : heroDef.secondary_deck;
-    
-    await setupHero(heroDef.hero_code, heroDef.id, secDeck);
-    saveGameState();
-});
-
 // ⚡ LECTURE DIRECTE SANS PROXY POUR LES DECKS (MARVELCDB L'AUTORISE DE BASE)
-btnLoadCustomDeck.addEventListener('click', async () => {
-    const inputVal = deckUrlInput.value.trim();
-    const urlMatch = inputVal.match(/(?:decklist|deck)\/(?:view|edit)?\/?(\d+)/);
-    const fallbackMatch = inputVal.match(/\d+/);
-    const deckId = urlMatch ? urlMatch[1] : (fallbackMatch ? fallbackMatch[0] : null);
-
-    if (!deckId) { alert("Veuillez entrer une URL ou un ID valide (ex: 63906)."); return; }
+async function loadCustomDeckById(deckId) {
+    btnLoadCustomDeck.disabled = true;
+    btnLoadCustomDeck.innerText = "Chargement...";
 
     try {
-        btnLoadCustomDeck.disabled = true;
-        btnLoadCustomDeck.innerText = "Chargement...";
-        
         let deckData = null;
         const endpoints = [
             `https://marvelcdb.com/api/public/decklist/${deckId}.json`,
@@ -412,19 +446,23 @@ btnLoadCustomDeck.addEventListener('click', async () => {
 
         const rawHeroCode = deckData.hero_code || deckData.investigator_code;
         const heroCode = await getBaseCardCode(rawHeroCode);
-        
+
         let dbHeroId = null;
         let dbSecondaryDeck = null;
+        let heroDisplayName = deckData.investigator_name || null;
         if (typeof MARVEL_DB !== 'undefined') {
             const match = MARVEL_DB.heroes.find(h => h.hero_code.replace(/[ab]$/,'') === heroCode.replace(/[ab]$/,''));
             if (match) {
                 dbHeroId = match.id;
                 dbSecondaryDeck = match.secondary_set_code ? buildDeckFromSetCode(match.secondary_set_code, match.start_on_board || []) : match.secondary_deck;
+                heroDisplayName = match.name;
             }
         }
 
         await setupHero(heroCode, dbHeroId, dbSecondaryDeck);
-        
+
+        rememberDeck(deckId, deckData.name || heroDisplayName || `Deck #${deckId}`);
+
         btnLoadCustomDeck.disabled = false;
         btnLoadCustomDeck.innerText = "Charger via URL";
         modalMenu.classList.add('hidden');
@@ -435,7 +473,77 @@ btnLoadCustomDeck.addEventListener('click', async () => {
         btnLoadCustomDeck.disabled = false;
         btnLoadCustomDeck.innerText = "Charger via URL";
     }
+}
+
+btnLoadCustomDeck.addEventListener('click', () => {
+    const inputVal = deckUrlInput.value.trim();
+    const urlMatch = inputVal.match(/(?:decklist|deck)\/(?:view|edit)?\/?(\d+)/);
+    const fallbackMatch = inputVal.match(/\d+/);
+    const deckId = urlMatch ? urlMatch[1] : (fallbackMatch ? fallbackMatch[0] : null);
+
+    if (!deckId) { alert("Veuillez entrer une URL ou un ID valide (ex: 63906)."); return; }
+
+    loadCustomDeckById(deckId);
 });
+
+// --- DECKS SAUVEGARDÉS (REJOUER UN DECK URL DÉJÀ CHARGÉ) ---
+const SAVED_DECKS_KEY = 'marvelVTT_savedDecks';
+
+function getSavedDecks() {
+    try { return JSON.parse(localStorage.getItem(SAVED_DECKS_KEY)) || []; } catch (e) { return []; }
+}
+
+function persistSavedDecks(list) {
+    localStorage.setItem(SAVED_DECKS_KEY, JSON.stringify(list));
+}
+
+function rememberDeck(deckId, name) {
+    let list = getSavedDecks().filter(d => d.id !== deckId);
+    list.unshift({ id: deckId, name: name || `Deck #${deckId}`, ts: Date.now() });
+    if (list.length > 20) list = list.slice(0, 20);
+    persistSavedDecks(list);
+    renderSavedDecks();
+}
+
+function forgetDeck(deckId) {
+    persistSavedDecks(getSavedDecks().filter(d => d.id !== deckId));
+    renderSavedDecks();
+}
+
+function renderSavedDecks() {
+    const wrap = document.getElementById('saved-decks-wrap');
+    const list = document.getElementById('saved-decks-list');
+    if (!wrap || !list) return;
+
+    const decks = getSavedDecks();
+    if (decks.length === 0) {
+        wrap.classList.add('hidden');
+        list.innerHTML = '';
+        return;
+    }
+
+    wrap.classList.remove('hidden');
+    list.innerHTML = decks.map(d => `
+        <div class="saved-deck-item">
+            <div class="saved-deck-info">
+                <span class="saved-deck-name">${d.name}</span>
+                <span class="saved-deck-meta">ID ${d.id} · ${new Date(d.ts).toLocaleDateString()}</span>
+            </div>
+            <button class="saved-deck-load" data-deck-id="${d.id}">▶ Charger</button>
+            <button class="saved-deck-delete" data-deck-id="${d.id}" title="Supprimer">🗑</button>
+        </div>
+    `).join('');
+
+    list.querySelectorAll('.saved-deck-load').forEach(btn => {
+        btn.addEventListener('click', () => loadCustomDeckById(btn.dataset.deckId));
+    });
+    list.querySelectorAll('.saved-deck-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            forgetDeck(btn.dataset.deckId);
+        });
+    });
+}
 
 async function setupHero(heroBaseCode, dbHeroId, secondaryDeckData = null) {
     let coreCode = heroBaseCode.replace(/[ab]$/, '');
@@ -589,13 +697,13 @@ if (btnAddNemesis) {
 }
 
 btnLoadVillain.addEventListener('click', async () => {
-    const vId = villainSelect.value;
-    
+    const vId = selectedVillainId;
+
     const stdDiff = document.querySelector('input[name="diff-std"]:checked').value;
     const expDiff = document.querySelector('input[name="diff-exp"]:checked').value;
     const isExpert = (expDiff !== 'none');
 
-    if (!vId) return;
+    if (!vId) { alert("Veuillez sélectionner un méchant."); return; }
     modalMenu.classList.add('hidden');
     
     const villainDef = MARVEL_DB.villains.find(v => v.id === vId);
@@ -1227,7 +1335,7 @@ function buildCardDOM(cardData, explicitBackUrl = null) {
     card.dataset.backUrl = backUrl;
 
     card.innerHTML = `
-        <img src="${frontUrl}" class="card-front" alt="${cardData.name || 'Carte'}" onerror="this.onerror=null; this.src='${CARD_BACKS_FALLBACK[isEncounter ? 'encounter' : 'player']}';"/>
+        <img src="${frontUrl}" class="card-front" alt="${cardData.name || 'Carte'}" loading="lazy" onerror="this.onerror=null; this.src='${CARD_BACKS_FALLBACK[isEncounter ? 'encounter' : 'player']}';"/>
         <div class="token damage-token hidden" style="top: 45%; left: 15%; transform: translate(-50%, -50%);">0</div>
         <div class="token threat-token hidden" style="top: 45%; left: 50%; transform: translate(-50%, -50%);">0</div>
         <div class="token generic-token hidden" style="top: 45%; left: 85%; transform: translate(-50%, -50%);">0</div>
@@ -1814,7 +1922,7 @@ async function openInspectModal(pileType) {
         const code = pile[i]; const cardData = await fetchAPI(code); if (!cardData) continue;
         const item = document.createElement('div'); item.classList.add('inspect-card-item');
         
-        item.innerHTML = `<img src="${getImageUrl(cardData)}" alt="${cardData.name}" title="Cliquer pour afficher dans le panneau de zoom"/><button>Mettre en jeu</button>`;
+        item.innerHTML = `<img src="${getImageUrl(cardData)}" alt="${cardData.name}" loading="lazy" title="Cliquer pour afficher dans le panneau de zoom"/><button>Mettre en jeu</button>`;
         
         item.querySelector('img').addEventListener('click', () => {
             showZoom(getImageUrl(cardData));
@@ -2031,10 +2139,61 @@ function saveGameState(isAutoSave = false) {
 
 setInterval(() => saveGameState(true), 3000); 
 
-window.addEventListener('beforeunload', () => saveGameState(true)); 
-document.addEventListener("visibilitychange", () => { 
+window.addEventListener('beforeunload', () => saveGameState(true));
+document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'hidden') saveGameState(true);
 });
+
+// --- EXPORT / IMPORT DE LA PARTIE (FICHIER JSON) ---
+const btnExportSave = document.getElementById('btn-export-save');
+const btnImportSave = document.getElementById('btn-import-save');
+const importSaveInput = document.getElementById('import-save-input');
+
+if (btnExportSave) {
+    btnExportSave.addEventListener('click', () => {
+        saveGameState();
+        const data = localStorage.getItem('marvelVTT_save');
+        if (!data) { alert("Aucune partie en cours à exporter."); return; }
+
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const dateStr = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `marvel-champions-partie-${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    });
+}
+
+if (btnImportSave && importSaveInput) {
+    btnImportSave.addEventListener('click', () => importSaveInput.click());
+
+    importSaveInput.addEventListener('change', () => {
+        const file = importSaveInput.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const parsed = JSON.parse(reader.result);
+                if (!parsed || !Array.isArray(parsed.cards)) throw new Error("Format invalide");
+
+                if (!confirm("Importer cette partie remplacera la partie en cours. Continuer ?")) return;
+
+                localStorage.setItem('marvelVTT_save', reader.result);
+                location.reload();
+            } catch (e) {
+                alert("Fichier de sauvegarde invalide ou corrompu.");
+            } finally {
+                importSaveInput.value = '';
+            }
+        };
+        reader.readAsText(file);
+    });
+}
 
 function loadGameState() {
     const saved = localStorage.getItem('marvelVTT_save');

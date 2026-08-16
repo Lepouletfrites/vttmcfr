@@ -411,6 +411,52 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
 
 .menu-footer-actions { display: flex; gap: 10px; }
 .menu-content-wrap { display: flex; flex-direction: column; gap: 20px; }
+.menu-hint { font-size: 0.8em; color: var(--text-muted); margin: 0 0 10px 0; line-height: 1.4; }
+
+/* Decks sauvegardés */
+.saved-decks-label { margin-top: 12px; }
+.saved-decks-list {
+    display: flex; flex-direction: column; gap: 6px;
+    max-height: 160px; overflow-y: auto;
+}
+.saved-deck-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-elevated); border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm); padding: 8px 10px;
+}
+.saved-deck-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.saved-deck-name { font-size: 0.85em; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.saved-deck-meta { font-size: 0.7em; color: var(--text-muted); }
+.saved-deck-load, .saved-deck-delete {
+    padding: 6px 10px; font-size: 0.75em; flex-shrink: 0;
+}
+.saved-deck-load { background-color: var(--accent-green); }
+.saved-deck-delete { background-color: transparent; box-shadow: none; color: var(--text-muted); padding: 6px 8px; }
+.saved-deck-delete:hover { color: var(--accent-red); filter: none; transform: none; }
+
+/* Picker visuel de méchants */
+.villain-picker {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px; max-height: 260px; overflow-y: auto;
+    background: var(--bg-elevated); border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm); padding: 10px; margin-bottom: 10px;
+}
+.villain-tile {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: var(--bg-panel-soft); border: 2px solid transparent; border-radius: var(--radius-sm);
+    padding: 8px; cursor: pointer; text-align: center;
+    transition: transform 0.12s var(--ease), border-color 0.12s var(--ease), background-color 0.12s var(--ease);
+}
+.villain-tile:hover { transform: translateY(-2px); background: var(--bg-elevated); }
+.villain-tile.selected { border-color: var(--accent-red); background: #2a1a1a; }
+.villain-tile-thumb {
+    width: 100%; aspect-ratio: 5 / 7; border-radius: 4px; object-fit: cover;
+    background: var(--bg-app); display: flex; align-items: center; justify-content: center;
+    font-size: 1.6em;
+}
+.villain-tile-name { font-size: 0.72em; font-weight: 600; color: var(--text-secondary); line-height: 1.25; }
+.villain-tile.selected .villain-tile-name { color: var(--text-primary); }
+.villain-picker-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 0.85em; padding: 20px 0; }
 
 .inspect-card-item { width: 100px; text-align: center; display: flex; flex-direction: column; gap: 5px; }
 .inspect-card-item img { width: 100%; border-radius: var(--radius-sm); cursor: zoom-in; transition: transform 0.2s var(--ease); pointer-events: auto; box-shadow: var(--shadow-sm); }
