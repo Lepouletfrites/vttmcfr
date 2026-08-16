@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "5.4"; // Retrait du proxy pour les URL de decks (bloqué par MarvelCDB)
+const GAME_VERSION = "5.5"; // Fix: résolution forcée de l'image d'origine pour les cartes réimprimées/alt-arts
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -77,10 +77,9 @@ menuPileShuffleIntoDeck.innerText = 'Remélanger dans la pioche';
 pileContextMenu.appendChild(menuPileShuffleIntoDeck);
 
 const menuBanish = document.createElement('div');
-menuBanish.className = 'menu-item';
+menuBanish.className = 'menu-item menu-item-danger';
 menuBanish.id = 'menu-banish';
 menuBanish.innerText = 'Bannir la carte';
-menuBanish.style.color = '#e74c3c';
 contextMenu.appendChild(menuBanish);
 
 // Ajout des boutons pour l'Accélération
@@ -241,16 +240,16 @@ function initMenus() {
 
     const modularList = document.getElementById('modular-list');
     if (modularList) {
-        let html = `<label style="cursor: pointer; color: #f1c40f; display: flex; align-items: center; gap: 5px;">
-            <input type="checkbox" id="mod-default-checkbox" checked> 
+        let html = `<label class="modular-option modular-option-default">
+            <input type="checkbox" id="mod-default-checkbox" checked>
             <b>Par défaut (défini par le Méchant)</b>
         </label>
-        <div style="height: 1px; background: #7f8c8d; margin: 5px 0;"></div>`;
-        
+        <div class="modular-separator"></div>`;
+
         MARVEL_DB.modulars.forEach(m => {
             if (m.card_set_code || (m.cards && m.cards.length > 0)) {
-                html += `<label style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: #ecf0f1;">
-                    <input type="checkbox" class="mod-checkbox" value="${m.id}"> 
+                html += `<label class="modular-option">
+                    <input type="checkbox" class="mod-checkbox" value="${m.id}">
                     ${m.name}
                 </label>`;
             }
@@ -283,9 +282,11 @@ async function fetchAPI(cardCode) {
         return null;
     }
 
-    // 4. Gestion des alt-arts (duplicate_of) en local
-    if (cardData.duplicate_of) {
-        return await fetchAPI(cardData.duplicate_of);
+    // 4. Gestion des réimpressions / alt-arts (duplicate_of_code) en local
+    // On force systématiquement la résolution vers la carte d'origine : les réimpressions
+    // partagent le même visuel/texte mais ne sont pas toujours illustrées dans notre base d'images.
+    if (cardData.duplicate_of_code) {
+        return await fetchAPI(cardData.duplicate_of_code);
     }
 
     // La carte est trouvée et valide, on la retourne directement !
@@ -296,7 +297,13 @@ async function fetchAPI(cardCode) {
 
 function getImageUrl(cardData) {
     if (!cardData) return '';
-    
+
+    // Réimpressions / alt-arts : on force la résolution vers la carte d'origine, car les
+    // réimpressions n'ont pas toujours leur propre visuel dans la base d'images.
+    if (cardData.duplicate_of_code && typeof localDatabase !== 'undefined' && localDatabase[cardData.duplicate_of_code]) {
+        cardData = localDatabase[cardData.duplicate_of_code];
+    }
+
     let code = cardData.code;
     let imageCode = code;
     
@@ -347,10 +354,10 @@ function buildDeckFromSetCode(setCode, excludeList = []) {
 }
 
 async function getBaseCardCode(code) {
-    if (localDatabase && localDatabase[code] && localDatabase[code].duplicate_of) {
-        return await getBaseCardCode(localDatabase[code].duplicate_of);
+    if (localDatabase && localDatabase[code] && localDatabase[code].duplicate_of_code) {
+        return await getBaseCardCode(localDatabase[code].duplicate_of_code);
     }
-    return code; 
+    return code;
 }
 
 btnLoadHero.addEventListener('click', async () => {
@@ -1224,7 +1231,7 @@ function buildCardDOM(cardData, explicitBackUrl = null) {
         <div class="token damage-token hidden" style="top: 45%; left: 15%; transform: translate(-50%, -50%);">0</div>
         <div class="token threat-token hidden" style="top: 45%; left: 50%; transform: translate(-50%, -50%);">0</div>
         <div class="token generic-token hidden" style="top: 45%; left: 85%; transform: translate(-50%, -50%);">0</div>
-        <div class="token acceleration-token hidden" style="top: 50%; right: -8px; transform: translateY(-50%); background-color: #e67e22; color: white;">0</div>
+        <div class="token acceleration-token hidden" style="top: 50%; right: -8px; transform: translateY(-50%);">0</div>
         <div class="status-container tough-container"></div>
         <div class="status-container stunned-container"></div>
         <div class="status-container confused-container"></div>
@@ -1268,7 +1275,7 @@ function syncTokenVisuals(card) {
     if(toughCont) {
         toughCont.innerHTML = '';
         if (!isFaceDown) {
-            for(let i=0; i<toughCount; i++) toughCont.innerHTML += `<div class="status-token" style="background-color:#e67e22; color:white;">TENACE</div>`;
+            for(let i=0; i<toughCount; i++) toughCont.innerHTML += `<div class="status-token status-token-tough">TENACE</div>`;
         }
     }
     
@@ -1276,7 +1283,7 @@ function syncTokenVisuals(card) {
     if(stunnedCont) {
         stunnedCont.innerHTML = '';
         if (!isFaceDown) {
-            for(let i=0; i<stunnedCount; i++) stunnedCont.innerHTML += `<div class="status-token" style="background-color:#8e44ad; color:white;">SONNÉ</div>`;
+            for(let i=0; i<stunnedCount; i++) stunnedCont.innerHTML += `<div class="status-token status-token-stunned">SONNÉ</div>`;
         }
     }
     
@@ -1284,7 +1291,7 @@ function syncTokenVisuals(card) {
     if(confusedCont) {
         confusedCont.innerHTML = '';
         if (!isFaceDown) {
-            for(let i=0; i<confusedCount; i++) confusedCont.innerHTML += `<div class="status-token" style="background-color:#2ecc71; color:white;">DÉSORIENTÉ</div>`;
+            for(let i=0; i<confusedCount; i++) confusedCont.innerHTML += `<div class="status-token status-token-confused">DÉSORIENTÉ</div>`;
         }
     }
 }
@@ -1807,7 +1814,7 @@ async function openInspectModal(pileType) {
         const code = pile[i]; const cardData = await fetchAPI(code); if (!cardData) continue;
         const item = document.createElement('div'); item.classList.add('inspect-card-item');
         
-        item.innerHTML = `<img src="${getImageUrl(cardData)}" alt="${cardData.name}" title="Cliquer pour afficher dans le panneau de zoom"/><button style="margin-top: 5px; width: 100%;">Mettre en jeu</button>`;
+        item.innerHTML = `<img src="${getImageUrl(cardData)}" alt="${cardData.name}" title="Cliquer pour afficher dans le panneau de zoom"/><button>Mettre en jeu</button>`;
         
         item.querySelector('img').addEventListener('click', () => {
             showZoom(getImageUrl(cardData));
@@ -2181,9 +2188,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const tokenBar = document.getElementById('token-bar');
     if (tokenBar) {
         tokenBar.insertAdjacentHTML('beforeend', `
-            <div style="width: 2px; height: 30px; background-color: #7f8c8d; margin: 0 10px;"></div>
-            <button id="btn-side-cards" class="token-btn" style="background-color: #8e44ad; color: white;">De Côté</button>
-            <button id="btn-banished-cards" class="token-btn" style="background-color: #c0392b; color: white;">Bannies (<span id="banished-count">0</span>)</button>
+            <div class="token-divider"></div>
+            <button id="btn-side-cards" class="token-btn token-stunned">De Côté</button>
+            <button id="btn-banished-cards" class="token-btn token-damage">Bannies (<span id="banished-count">0</span>)</button>
         `);
         
         document.getElementById('btn-side-cards').addEventListener('click', (e) => {

@@ -11,12 +11,12 @@
     <!-- Zone principale unique -->
     <div id="main-area">
         <div id="ui-panel">
-            <button id="btn-open-menu" style="background-color: #f39c12; color: #2c3e50; font-size: 1.1em; padding: 10px 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">☰ Menu Principal</button>
-            <button id="btn-undo" class="hidden" style="background-color: #e67e22; color: white; font-size: 1em; padding: 10px 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-radius: 5px; cursor: pointer; border: none; font-weight: bold; margin-left: 10px;">↩️ Annuler</button>
-            <button id="btn-add-nemesis" class="hidden" style="background-color: #8e44ad; color: white; font-size: 1em; padding: 10px 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-radius: 5px; cursor: pointer; border: none; font-weight: bold; margin-left: 15px;">😈 Ajouter Némésis</button>
+            <button id="btn-open-menu" class="btn-menu">☰ Menu Principal</button>
+            <button id="btn-undo" class="btn-undo hidden">↩️ Annuler</button>
+            <button id="btn-add-nemesis" class="btn-nemesis hidden">😈 Ajouter Némésis</button>
 
             <!-- Traqueur de Héros -->
-            <div id="hero-tracker" class="hidden" style="margin-left: auto;">
+            <div id="hero-tracker" class="hidden">
                 <div class="tracker-item">
                     <span class="tracker-label">PV Héros:</span>
                     <input type="number" id="hero-hp-input" value="0" min="0">
@@ -79,13 +79,13 @@
             <div id="hand-container">
                 <!-- BARRE DE GESTION DES JETONS -->
                 <div id="token-bar">
-                    <button data-type="damage" data-basetext="DÉGÂTS" class="token-btn" style="background-color:#c0392b;">DÉGÂTS</button>
-                    <button data-type="threat" data-basetext="MENACE" class="token-btn" style="background-color:#f1c40f; color:#000;">MENACE</button>
-                    <button data-type="generic" data-basetext="GÉNÉRIQUE" class="token-btn" style="background-color:#3498db;">GÉNÉRIQUE</button>
-                    <div style="width: 2px; background: rgba(255,255,255,0.3); margin: 0 5px;"></div>
-                    <button data-type="tough" data-basetext="TENACE" class="token-btn" style="background-color:#e67e22;">TENACE</button>
-                    <button data-type="stunned" data-basetext="SONNÉ" class="token-btn" style="background-color:#8e44ad;">SONNÉ</button>
-                    <button data-type="confused" data-basetext="DÉSORIENTÉ" class="token-btn" style="background-color:#2ecc71;">DÉSORIENTÉ</button>
+                    <button data-type="damage" data-basetext="DÉGÂTS" class="token-btn token-damage">DÉGÂTS</button>
+                    <button data-type="threat" data-basetext="MENACE" class="token-btn token-threat">MENACE</button>
+                    <button data-type="generic" data-basetext="GÉNÉRIQUE" class="token-btn token-generic">GÉNÉRIQUE</button>
+                    <div class="token-divider"></div>
+                    <button data-type="tough" data-basetext="TENACE" class="token-btn token-tough">TENACE</button>
+                    <button data-type="stunned" data-basetext="SONNÉ" class="token-btn token-stunned">SONNÉ</button>
+                    <button data-type="confused" data-basetext="DÉSORIENTÉ" class="token-btn token-confused">DÉSORIENTÉ</button>
                 </div>
                 <div id="hand-area"></div>
             </div>
@@ -96,7 +96,7 @@
                 </div>
             </div>
             
-            <div style="width: 2px; background: #000; margin: 0 5px;"></div> 
+            <div class="hud-divider"></div>
 
             <div class="deck-area">
                 <div id="encounter-deck" class="hidden pile-element" data-pile="encounter-deck">
@@ -113,8 +113,8 @@
 
     <!-- Menus Contextuels et Modales -->
     <div id="context-menu" class="hidden">
-        <div class="menu-item hidden" id="menu-next-scheme" style="color: #f39c12;">⏭️ Passer à la Manigance suivante</div>
-        <div class="menu-item hidden" id="menu-next-villain" style="color: #e74c3c;">⏭️ Passer au Stade suivant (Méchant)</div>
+        <div class="menu-item menu-item-gold hidden" id="menu-next-scheme">⏭️ Passer à la Manigance suivante</div>
+        <div class="menu-item menu-item-danger hidden" id="menu-next-villain">⏭️ Passer au Stade suivant (Méchant)</div>
         <div class="menu-item hidden" id="menu-add-accel">➕ Ajouter Accélération</div>
         <div class="menu-item hidden" id="menu-sub-accel">➖ Retirer Accélération</div>
         <div class="menu-separator hidden" id="menu-progression-separator"></div>
@@ -122,7 +122,7 @@
         <div class="menu-item" id="menu-flip">Retourner (Face A / B)</div>
         <div class="menu-item" id="menu-exhaust">Incliner / Redresser</div>
         <div class="menu-separator"></div>
-        <div class="menu-item" id="menu-clear-tokens" style="color: #e74c3c;">Effacer tous les jetons</div>
+        <div class="menu-item menu-item-danger" id="menu-clear-tokens">Effacer tous les jetons</div>
         <div class="menu-separator"></div>
         <div class="menu-item" id="menu-return-top">Remettre au dessus du deck</div>
         <div class="menu-item" id="menu-return-bottom">Remettre sous le deck</div>
@@ -153,54 +153,54 @@
                 <h3>Menu Principal</h3>
                 <button id="modal-menu-close">&times;</button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                
-                <div style="background: #1a252f; padding: 15px; border-radius: 8px;">
-                    <h4 style="margin: 0 0 10px 0; color: #3498db;">Charger un Deck personnalisé</h4>
-                    <input type="text" id="deck-url-input" placeholder="Ex: URL MarvelCDB ou ID (ex: 63906)" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #7f8c8d; background: #2c3e50; color: white; margin-bottom: 10px;">
-                    <button id="btn-load-custom-deck" style="width: 100%; background-color: #27ae60; padding: 12px; font-size: 1em;">Charger via URL</button>
+            <div class="menu-content-wrap">
+
+                <div class="menu-section">
+                    <h4 class="menu-section-accent">🔗 Charger un Deck personnalisé</h4>
+                    <input type="text" id="deck-url-input" class="deck-url-input" placeholder="Ex: URL MarvelCDB ou ID (ex: 63906)">
+                    <button id="btn-load-custom-deck" class="btn-block btn-success">Charger via URL</button>
                 </div>
 
-                <div style="background: #1a252f; padding: 15px; border-radius: 8px;">
-                    <h4 style="margin: 0 0 10px 0; color: #f1c40f;">Héros (Decks Préconstruits)</h4>
+                <div class="menu-section">
+                    <h4 class="menu-section-gold">🦸 Héros (Decks Préconstruits)</h4>
                     <select id="hero-select" class="menu-select"></select>
-                    <button id="btn-load-hero" style="width: 100%; padding: 12px;">Générer le deck Héros</button>
+                    <button id="btn-load-hero" class="btn-block">Générer le deck Héros</button>
                 </div>
 
-                <div style="background: #1a252f; padding: 15px; border-radius: 8px;">
-                    <h4 style="margin: 0 0 10px 0; color: #e74c3c;">Mise en place du Scénario</h4>
-                    
+                <div class="menu-section">
+                    <h4 class="menu-section-red">🎯 Mise en place du Scénario</h4>
+
                     <label class="menu-label">Méchant :</label>
                     <select id="villain-select" class="menu-select"></select>
-                    
+
                     <label class="menu-label">Set de Difficulté :</label>
-                    <div style="background: #2c3e50; padding: 10px; border-radius: 4px; border: 1px solid #7f8c8d; margin-bottom: 10px; font-size: 0.85em; display: flex; flex-direction: column; gap: 10px;">
-                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                            <b style="color: #3498db; width: 65px;">Standard:</b>
-                            <label style="cursor: pointer;"><input type="radio" name="diff-std" value="none"> Aucun</label>
-                            <label style="cursor: pointer;"><input type="radio" name="diff-std" value="standard_1" checked> I</label>
-                            <label style="cursor: pointer;"><input type="radio" name="diff-std" value="standard_2"> II</label>
-                            <label style="cursor: pointer;"><input type="radio" name="diff-std" value="standard_3"> III</label>
+                    <div class="difficulty-box">
+                        <div class="difficulty-row">
+                            <b class="difficulty-label-std">Standard:</b>
+                            <label><input type="radio" name="diff-std" value="none"> Aucun</label>
+                            <label><input type="radio" name="diff-std" value="standard_1" checked> I</label>
+                            <label><input type="radio" name="diff-std" value="standard_2"> II</label>
+                            <label><input type="radio" name="diff-std" value="standard_3"> III</label>
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                            <b style="color: #e74c3c; width: 65px;">Expert:</b>
-                            <label style="cursor: pointer;"><input type="radio" name="diff-exp" value="none" checked> Aucun</label>
-                            <label style="cursor: pointer;"><input type="radio" name="diff-exp" value="expert_1"> I</label>
-                            <label style="cursor: pointer;"><input type="radio" name="diff-exp" value="expert_2"> II</label>
+                        <div class="difficulty-row">
+                            <b class="difficulty-label-exp">Expert:</b>
+                            <label><input type="radio" name="diff-exp" value="none" checked> Aucun</label>
+                            <label><input type="radio" name="diff-exp" value="expert_1"> I</label>
+                            <label><input type="radio" name="diff-exp" value="expert_2"> II</label>
                         </div>
                     </div>
 
                     <label class="menu-label">Sets Modulaires :</label>
-                    <div id="modular-list" style="background: #2c3e50; padding: 10px; border-radius: 4px; border: 1px solid #7f8c8d; height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+                    <div id="modular-list" class="modular-list">
                         <!-- Les options seront injectées ici par le Javascript -->
                     </div>
 
-                    <button id="btn-load-villain" style="width: 100%; padding: 12px; background-color: #8e44ad; margin-top: 10px;">Déployer le Scénario</button>
+                    <button id="btn-load-villain" class="btn-block btn-nemesis btn-mt">Déployer le Scénario</button>
                 </div>
-                
-                <div style="display: flex; gap: 10px;">
-                    <button id="btn-save-game" style="flex: 1; background-color: #2980b9; color: white; font-size: 1em; padding: 12px; font-weight: bold; border-radius: 5px; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">💾 Sauvegarder</button>
-                    <button id="btn-reset-game" style="flex: 1; background-color: #c0392b; color: white; font-size: 1em; padding: 12px; font-weight: bold; border-radius: 5px; border: none; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">⚠️ Réinitialiser</button>
+
+                <div class="menu-footer-actions">
+                    <button id="btn-save-game" class="btn-save btn-flex">💾 Sauvegarder</button>
+                    <button id="btn-reset-game" class="btn-danger btn-flex">⚠️ Réinitialiser</button>
                 </div>
             </div>
         </div>
