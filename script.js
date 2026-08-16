@@ -151,6 +151,8 @@ let topZIndex = 10;
 let myDeck = [], discardPile = [];
 let encounterDeck = [], encounterDiscardPile = [];
 let targetCard = null, targetPileType = null;
+let globalCardDragActive = false; // true pendant qu'une carte est activement déplacée (désactive l'aperçu au survol)
+let hoveredCard = null; // dernière carte survolée (souris) ou en appui long (tactile) — cible des raccourcis clavier E/F
 const CENTER_X = 2000, CENTER_Y = 2000;
 let scale = 1;
 let boardX = -CENTER_X + window.innerWidth / 2;
@@ -1467,43 +1469,73 @@ function discardCard(cardElement, forcedPile = null) {
         let idx = parseInt(target.split('-')[3]);
         if (!isNaN(idx)) villainSecDiscards[idx].push(code);
     }
-    else if (target === 'encounter') encounterDiscardPile.push(code); 
+    else if (target === 'encounter') encounterDiscardPile.push(code);
     else discardPile.push(code);
-    
+
     updateDeckCounters();
+}
+
+function flipCard(card) {
+    const willBeFlipped = card.dataset.flipped !== 'true';
+    card.dataset.flipped = willBeFlipped;
+    const newSrc = willBeFlipped ? card.dataset.backUrl : card.dataset.frontUrl;
+    card.querySelector('.card-front').src = newSrc;
+
+    showZoom(newSrc);
+
+    if (card.id === 'hero-card-element') heroHandSizeSpan.innerText = willBeFlipped ? card.dataset.handSizeB : card.dataset.handSizeA;
+
+    updateCardOrientation(card);
+    syncTokenVisuals(card);
+}
+
+function toggleExhaustCard(card) {
+    if (!card || card.classList.contains('in-hand')) return;
+    card.classList.toggle('exhausted');
 }
 
 function setupCardInteractions(card) {
     // --- NOUVEAU : Logique centralisée pour le double-clic / double-tap ---
     const handleDoubleClick = () => {
-        if (activeTokenType) return; 
+        if (activeTokenType) return;
         if (card.classList.contains('in-hand')) return;
-        
+
         // On récupère les données de la carte pour connaître son type
         let data = JSON.parse(card.dataset.cardData);
-        const isEncounter = data.faction_code === 'encounter' || 
-                            data.type_code === 'minion' || 
-                            data.type_code === 'side_scheme' || 
-                            data.type_code === 'obligation' || 
+        const isEncounter = data.faction_code === 'encounter' ||
+                            data.type_code === 'minion' ||
+                            data.type_code === 'side_scheme' ||
+                            data.type_code === 'obligation' ||
                             data.type_code === 'villain';
-        
+
         // Si c'est une carte RENCONTRE face cachée, le double-clic la retourne
         if (isEncounter && card.dataset.flipped === 'true') {
-            card.dataset.flipped = 'false';
-            card.querySelector('.card-front').src = card.dataset.frontUrl;
-            
-            showZoom(card.dataset.frontUrl); 
-            
-            updateCardOrientation(card);
-            syncTokenVisuals(card); 
+            flipCard(card);
             saveGameState();
-        } 
-        // Si c'est une carte JOUEUR (face visible ou cachée) OU une carte Rencontre face visible, on l'incline
+        }
+        // Traîtrise / Obligation face visible : à usage unique, le double-clic défausse directement
+        else if ((data.type_code === 'treachery' || data.type_code === 'obligation') && card.dataset.flipped !== 'true') {
+            discardCard(card);
+            saveGameState();
+        }
+        // Sinon (carte JOUEUR, Minion, Manigance, Méchant...) : on incline/redresse
         else {
-            card.classList.toggle('exhausted');
+            toggleExhaustCard(card);
             saveGameState();
         }
     };
+
+    // --- APERÇU AU SURVOL (SOURIS) ET À L'APPUI LONG (TACTILE, géré dans makeDraggable) ---
+    card.addEventListener('mouseenter', () => {
+        if (globalCardDragActive || activeTokenType) return;
+        hoveredCard = card;
+        const isFlipped = card.dataset.flipped === 'true';
+        showZoom(isFlipped ? card.dataset.backUrl : card.dataset.frontUrl);
+    });
+    card.addEventListener('mouseleave', () => {
+        if (hoveredCard === card) hoveredCard = null;
+        hideZoom();
+    });
 
     // Application au double-clic (Souris PC)
     card.addEventListener('dblclick', () => {
@@ -1518,11 +1550,6 @@ function setupCardInteractions(card) {
         if (tapLength < 300 && tapLength > 0) {
             handleDoubleClick();
             e.preventDefault();
-            
-            if (card.clickTimeout) {
-                clearTimeout(card.clickTimeout);
-                card.clickTimeout = null;
-            }
         }
         lastTap = currentTime;
     });
@@ -1648,10 +1675,11 @@ menuNextVillain.addEventListener('click', async () => {
 
 function makeDraggable(element) {
     let isDragging = false, startX, startY;
-    let lastTouchEnd = 0; 
-    
+    let lastTouchEnd = 0;
+    let longPressTimer = null;
+
     element.onmousedown = (e) => {
-        if (Date.now() - lastTouchEnd < 500) return; 
+        if (Date.now() - lastTouchEnd < 500) return;
         if (e.target.closest('#phase-panel') || e.target.closest('#ui-panel')) return;
         if (e.button === 2) return;
         e.preventDefault(); e.stopPropagation();
@@ -1662,12 +1690,21 @@ function makeDraggable(element) {
 
     element.addEventListener('touchstart', (e) => {
         if (e.target.closest('#phase-panel') || e.target.closest('#ui-panel')) return;
-        isDragging = false; 
-        startX = e.touches[0].clientX; 
+        isDragging = false;
+        startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
-        
+
         document.addEventListener('touchmove', elementTouchDrag, {passive: false});
         document.addEventListener('touchend', closeTouchDragElement);
+
+        // Appui long = aperçu zoom (équivalent tactile du survol souris)
+        clearTimeout(longPressTimer);
+        longPressTimer = setTimeout(() => {
+            if (!isDragging) {
+                const isFlipped = element.dataset.flipped === 'true';
+                showZoom(isFlipped ? element.dataset.backUrl : element.dataset.frontUrl);
+            }
+        }, 450);
     }, {passive: false});
 
     function elementDrag(e) { handleMove(e.clientX, e.clientY, e); }
@@ -1675,8 +1712,10 @@ function makeDraggable(element) {
 
     function handleMove(clientX, clientY, e) {
         if (!isDragging && (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5)) {
-            isDragging = true; 
-            element.classList.remove('in-hand'); 
+            isDragging = true;
+            globalCardDragActive = true;
+            clearTimeout(longPressTimer);
+            element.classList.remove('in-hand');
             element.style.zIndex = topZIndex++;
         }
 
@@ -1712,9 +1751,11 @@ function makeDraggable(element) {
     }
 
     function closeTouchDragElement(e) {
-        lastTouchEnd = Date.now(); 
+        lastTouchEnd = Date.now();
+        clearTimeout(longPressTimer);
         document.removeEventListener('touchmove', elementTouchDrag);
         document.removeEventListener('touchend', closeTouchDragElement);
+        if (!isDragging) hideZoom(); // relâchement après un appui long : referme l'aperçu (pas de "mouseleave" au tactile)
         if (e.changedTouches.length > 0) {
             let clientX = e.changedTouches[0].clientX;
             let clientY = e.changedTouches[0].clientY;
@@ -1728,7 +1769,8 @@ function makeDraggable(element) {
             const dropTarget = document.elementFromPoint(clientX, clientY);
             element.style.visibility = '';
             element.classList.remove('is-dragging-hud', 'is-dragging-board');
-            
+            globalCardDragActive = false;
+
             if (dropTarget && dropTarget.closest('#board-hero-discard')) discardCard(element, 'hero-sec');
             else if (dropTarget && dropTarget.closest('.board-pile[data-pile^="villain-sec-discard-"]')) {
                 discardCard(element, dropTarget.closest('.board-pile').dataset.pile);
@@ -1738,24 +1780,12 @@ function makeDraggable(element) {
             else if (dropTarget && dropTarget.closest('#hand-area')) putInHand(element);
             else if (element.parentNode !== board) putOnBoardAt(element, (clientX - boardX) / scale, (clientY - boardY) / scale, element.dataset.flipped === 'true');
             saveGameState();
-        } else {
-            if (activeTokenType) {
-                applyTokenModeToCard(element, activeTokenType, activeTokenAction);
-                saveGameState();
-            } else {
-                if (element.clickTimeout) {
-                    clearTimeout(element.clickTimeout);
-                    element.clickTimeout = null;
-                } else {
-                    element.clickTimeout = setTimeout(() => {
-                        const isFlipped = element.dataset.flipped === 'true';
-                        const currentImg = isFlipped ? element.dataset.backUrl : element.dataset.frontUrl;
-                        showZoom(currentImg);
-                        element.clickTimeout = null;
-                    }, 250); 
-                }
-            }
+        } else if (activeTokenType) {
+            applyTokenModeToCard(element, activeTokenType, activeTokenAction);
+            saveGameState();
         }
+        // Un simple clic/tap sans glisser ne fait plus rien : l'aperçu se déclenche au survol
+        // (souris, voir setupCardInteractions) ou à l'appui long (tactile, voir touchstart plus haut).
     }
 }
 
@@ -1778,27 +1808,40 @@ document.addEventListener('touchstart', (e) => {
 
 function hideAllMenus() { contextMenu.classList.add('hidden'); pileContextMenu.classList.add('hidden'); }
 
+// --- RACCOURCIS CLAVIER ---
+// D : piocher une carte | Espace : phase suivante | E : incliner/redresser la carte survolée | F : retourner la carte survolée
+document.addEventListener('keydown', (e) => {
+    const activeTag = document.activeElement && document.activeElement.tagName;
+    if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    switch (e.key) {
+        case 'd': case 'D':
+            if (myDeck.length > 0 || discardPile.length > 0) {
+                drawCard('player');
+                saveGameState();
+            }
+            break;
+        case ' ':
+            e.preventDefault();
+            document.getElementById('btn-next-phase').click();
+            break;
+        case 'e': case 'E':
+            if (hoveredCard) { toggleExhaustCard(hoveredCard); saveGameState(); }
+            break;
+        case 'f': case 'F':
+            if (hoveredCard) { flipCard(hoveredCard); saveGameState(); }
+            break;
+    }
+});
+
 document.getElementById('menu-exhaust').addEventListener('click', () => {
-    if (targetCard && !targetCard.classList.contains('in-hand')) targetCard.classList.toggle('exhausted');
+    toggleExhaustCard(targetCard);
     hideAllMenus(); saveGameState();
 });
 
 document.getElementById('menu-flip').addEventListener('click', () => {
-    if (targetCard) {
-        const currentlyFlipped = targetCard.dataset.flipped === 'true';
-        const willBeFlipped = !currentlyFlipped;
-        
-        targetCard.dataset.flipped = willBeFlipped;
-        const newSrc = willBeFlipped ? targetCard.dataset.backUrl : targetCard.dataset.frontUrl;
-        targetCard.querySelector('.card-front').src = newSrc;
-
-        showZoom(newSrc);
-
-        if (targetCard.id === 'hero-card-element') heroHandSizeSpan.innerText = willBeFlipped ? targetCard.dataset.handSizeB : targetCard.dataset.handSizeA;
-        
-        updateCardOrientation(targetCard);
-        syncTokenVisuals(targetCard); 
-    }
+    if (targetCard) flipCard(targetCard);
     hideAllMenus(); saveGameState();
 });
 
