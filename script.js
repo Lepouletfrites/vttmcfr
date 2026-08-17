@@ -154,7 +154,7 @@ let myDeck = [], discardPile = [];
 let encounterDeck = [], encounterDiscardPile = [];
 let targetCard = null, targetPileType = null;
 let globalCardDragActive = false; // true pendant qu'une carte est activement déplacée (désactive l'aperçu au survol)
-let hoveredCard = null; // dernière carte survolée (souris) ou en appui long (tactile) — cible des raccourcis clavier E/F
+let hoveredCard = null; // dernière carte survolée (souris) — cible des raccourcis clavier E/F
 const CENTER_X = 2000, CENTER_Y = 2000;
 let scale = 1;
 let boardX = -CENTER_X + window.innerWidth / 2;
@@ -1822,7 +1822,7 @@ function setupCardInteractions(card) {
         }
     };
 
-    // --- APERÇU AU SURVOL (SOURIS) ET À L'APPUI LONG (TACTILE, géré dans makeDraggable) ---
+    // --- APERÇU AU SURVOL (SOURIS UNIQUEMENT) ---
     card.addEventListener('mouseenter', () => {
         if (globalCardDragActive || activeTokenType) return;
         hoveredCard = card;
@@ -1981,7 +1981,6 @@ menuNextVillain.addEventListener('click', async () => {
 function makeDraggable(element) {
     let isDragging = false, startX, startY;
     let lastTouchEnd = 0;
-    let longPressTimer = null;
     let isTouchInteraction = false;
 
     element.onmousedown = (e) => {
@@ -2003,15 +2002,6 @@ function makeDraggable(element) {
 
         document.addEventListener('touchmove', elementTouchDrag, {passive: false});
         document.addEventListener('touchend', closeTouchDragElement);
-
-        // Appui long = aperçu zoom (équivalent tactile du survol souris)
-        clearTimeout(longPressTimer);
-        longPressTimer = setTimeout(() => {
-            if (!isDragging) {
-                const isFlipped = element.dataset.flipped === 'true';
-                showZoom(isFlipped ? element.dataset.backUrl : element.dataset.frontUrl);
-            }
-        }, 450);
     }, {passive: false});
 
     function elementDrag(e) { handleMove(e.clientX, e.clientY, e); }
@@ -2037,7 +2027,6 @@ function makeDraggable(element) {
 
             isDragging = true;
             globalCardDragActive = true;
-            clearTimeout(longPressTimer);
             element.classList.remove('in-hand');
             element.style.zIndex = topZIndex++;
         }
@@ -2075,10 +2064,8 @@ function makeDraggable(element) {
 
     function closeTouchDragElement(e) {
         lastTouchEnd = Date.now();
-        clearTimeout(longPressTimer);
         document.removeEventListener('touchmove', elementTouchDrag);
         document.removeEventListener('touchend', closeTouchDragElement);
-        if (!isDragging) hideZoom(); // relâchement après un appui long : referme l'aperçu (pas de "mouseleave" au tactile)
         if (e.changedTouches.length > 0) {
             let clientX = e.changedTouches[0].clientX;
             let clientY = e.changedTouches[0].clientY;
@@ -2107,8 +2094,8 @@ function makeDraggable(element) {
             applyTokenModeToCard(element, activeTokenType, activeTokenAction);
             saveGameState();
         }
-        // Un simple clic/tap sans glisser ne fait plus rien : l'aperçu se déclenche au survol
-        // (souris, voir setupCardInteractions) ou à l'appui long (tactile, voir touchstart plus haut).
+        // Un simple clic/tap sans glisser ne fait plus rien : l'aperçu ne se déclenche
+        // qu'au survol (souris, voir setupCardInteractions).
     }
 }
 
