@@ -912,7 +912,17 @@ btnLoadVillain.addEventListener('click', async () => {
             sDom.dataset.cardDataA = JSON.stringify(frontData);
             if (backData) sDom.dataset.cardDataB = JSON.stringify(backData);
             sDom.id = `main-scheme-element`;
-            putOnBoardAt(sDom, spawnX - 250, spawnY, false);
+
+            // Certains scénarios démarrent avec la manigance principale déjà révélée (face B) :
+            // la face A n'est que le texte de mise en place (pas de menace), tout de suite
+            // retournée pour la partie. putOnBoardAt(..., true) l'affiche face B et pose
+            // dataset.flipped="true" ; on force ensuite la menace de départ sur celle de la face B.
+            const startFlipped = !!(villainDef.schemes_start_flipped && backData);
+            if (startFlipped) {
+                sDom.dataset.threat = backData.base_threat !== undefined ? backData.base_threat : 0;
+            }
+
+            putOnBoardAt(sDom, spawnX - 250, spawnY, startFlipped);
         }
     }
     
@@ -1852,16 +1862,14 @@ function setupCardInteractions(card) {
         }
     };
 
-    // --- APERÇU AU SURVOL (SOURIS UNIQUEMENT) ---
+    // --- SUIVI DE LA CARTE SURVOLÉE (SOURIS) : sert de cible aux raccourcis clavier E/F ---
+    // (pas d'aperçu zoom automatique au survol : le joueur ne le souhaite pas)
     card.addEventListener('mouseenter', () => {
         if (globalCardDragActive || activeTokenType) return;
         hoveredCard = card;
-        const isFlipped = card.dataset.flipped === 'true';
-        showZoom(isFlipped ? card.dataset.backUrl : card.dataset.frontUrl);
     });
     card.addEventListener('mouseleave', () => {
         if (hoveredCard === card) hoveredCard = null;
-        hideZoom();
     });
 
     // Application au double-clic (Souris PC)

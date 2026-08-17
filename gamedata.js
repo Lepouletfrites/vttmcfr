@@ -178,8 +178,12 @@ const MARVEL_DB = {
             id: "drang",
             name: "Drang de la Confrérie Badoon",
             card_set_code: "brotherhood_of_badoon",
-            stages: ["16058","16059","16060"], 
+            stages: ["16058","16059","16060"],
             schemes: ["16061a","16062a"],
+            // La face A de "Invasion Terrestre" (16061a) n'est que le texte de mise en place
+            // (aucune menace, aucune mécanique) : la partie démarre directement sur la face B
+            // (16061b, 2 de menace, mécanique du Vaisseau Badoon déjà active).
+            schemes_start_flipped: true,
             mandatory_modulars: ["ship_command"],
             default_modulars: ["band_of_badoon"],
             start_on_board: ["16063","16142"]
