@@ -830,6 +830,35 @@ if (btnAddNemesis) {
     });
 }
 
+// Retire toutes les cartes RENCONTRE / MÉCHANT actuellement en jeu et remet à zéro l'état
+// du scénario. Nécessaire si on redéploie un scénario sans repasser par "Réinitialiser" :
+// sans ça, les anciennes cartes restent sur le plateau (ex: deux #main-scheme-element en
+// double), et la nouvelle manigance principale se retrouve invisible ou avec la mauvaise menace
+// car document.getElementById() ne retrouve que la première occurrence (l'ancienne, périmée).
+function clearScenarioBoard() {
+    document.querySelectorAll('.card').forEach(card => {
+        if (card.dataset.faction === 'encounter' || card.dataset.faction === 'villain') {
+            card.remove();
+        }
+    });
+
+    for (let i = 0; i < 3; i++) {
+        const vd = document.getElementById('board-villain-deck-' + i);
+        const vdd = document.getElementById('board-villain-discard-' + i);
+        if (vd) vd.classList.add('hidden');
+        if (vdd) vdd.classList.add('hidden');
+    }
+
+    encounterDeck = [];
+    encounterDiscardPile = [];
+    villainSecDecks = [[], [], []];
+    villainSecDiscards = [[], [], []];
+    villainSecCodes = [[], [], []];
+    vSecCount = 0;
+    setAsideCards = [];
+    banishedCards = [];
+}
+
 btnLoadVillain.addEventListener('click', async () => {
     const vId = selectedVillainId;
 
@@ -839,7 +868,8 @@ btnLoadVillain.addEventListener('click', async () => {
 
     if (!vId) { alert("Veuillez sélectionner un méchant."); return; }
     modalMenu.classList.add('hidden');
-    
+    clearScenarioBoard();
+
     const villainDef = MARVEL_DB.villains.find(v => v.id === vId);
     
     currentVillainStages = villainDef.stages || [];
