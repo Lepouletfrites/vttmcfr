@@ -2131,19 +2131,24 @@ function makeDraggable(element) {
         } else if (activeTokenType) {
             applyTokenModeToCard(element, activeTokenType, activeTokenAction);
             saveGameState();
+        } else {
+            // Un simple clic/tap sans glisser = sélection de la carte : affiche l'aperçu zoom.
+            const isFlipped = element.dataset.flipped === 'true';
+            showZoom(isFlipped ? element.dataset.backUrl : element.dataset.frontUrl);
         }
-        // Un simple clic/tap sans glisser ne fait plus rien : l'aperçu ne se déclenche
-        // qu'au survol (souris, voir setupCardInteractions).
     }
 }
 
 // --- MENUS CONTEXTUELS ET ACTIONS ---
 document.addEventListener('click', (e) => {
     if (!e.target.closest('#context-menu') && !e.target.closest('#pile-context-menu')) hideAllMenus();
-    
+
     if (!e.target.closest('#token-bar') && !e.target.closest('.card') && !e.target.closest('.token-btn')) {
         if (activeTokenType) { activeTokenType = null; activeTokenAction = null; updateTokenBarUI(); }
     }
+
+    // Clic en dehors d'une carte (et pas sur l'aperçu lui-même) : referme l'aperçu zoom en cours.
+    if (!e.target.closest('.card') && !e.target.closest('#floating-zoom')) hideZoom();
 });
 
 document.addEventListener('touchstart', (e) => {
