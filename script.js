@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "5.5"; // Fix: résolution forcée de l'image d'origine pour les cartes réimprimées/alt-arts
+const GAME_VERSION = "5.6"; // Fix: zoom au clic (pas au survol) + visible au-dessus des modales
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -2147,8 +2147,9 @@ document.addEventListener('click', (e) => {
         if (activeTokenType) { activeTokenType = null; activeTokenAction = null; updateTokenBarUI(); }
     }
 
-    // Clic en dehors d'une carte (et pas sur l'aperçu lui-même) : referme l'aperçu zoom en cours.
-    if (!e.target.closest('.card') && !e.target.closest('#floating-zoom')) hideZoom();
+    // Clic en dehors d'une carte (et pas sur l'aperçu lui-même, ni sur une carte de la modale
+    // d'inspection de pile qui a sa propre logique de zoom) : referme l'aperçu zoom en cours.
+    if (!e.target.closest('.card') && !e.target.closest('#floating-zoom') && !e.target.closest('.inspect-card-item')) hideZoom();
 });
 
 document.addEventListener('touchstart', (e) => {

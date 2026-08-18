@@ -114,7 +114,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
     top: 80px;
     width: 320px;
     max-width: 45vw;
-    z-index: 1000;
+    /* Doit rester visible au-dessus des modales (mise en place, inspection de pile...)
+       qui ont leur propre flou d'arrière-plan, sans quoi le zoom se retrouve caché derrière. */
+    z-index: 20001;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--border-strong);
