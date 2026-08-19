@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "5.6"; // Fix: zoom au clic (pas au survol) + visible au-dessus des modales
+const GAME_VERSION = "5.7"; // Ajout: support des scénarios "deck de méchants" (villain_deck)
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -124,6 +124,13 @@ let currentVillainStages = [];
 let currentVillainStageIndex = 0;
 let currentVillainSchemes = [];
 let currentSchemeIndex = 0;
+
+// Scénarios "deck de méchants" (ex: Murlocks) : un seul méchant à la fois, tiré au hasard
+// parmi villainDef.villain_deck ; "carte suivante" pioche le méchant suivant du deck mélangé
+// au lieu d'avancer vers une "étape 2" classique. En expert, on affiche la face B du méchant
+// courant (texte/stats plus difficiles) plutôt qu'une carte "étape 2" distincte.
+let currentVillainIsDeck = false;
+let currentVillainDeckExpert = false;
 
 // --- GESTION DES JETONS ---
 let activeTokenType = null;
@@ -859,6 +866,28 @@ function clearScenarioBoard() {
     banishedCards = [];
 }
 
+// Construit la carte DOM d'un méchant de "villain_deck". En expert, affiche directement la
+// face B (stats plus difficiles) au lieu de la face imprimée, comme schemes_start_flipped
+// le fait déjà pour les manigances principales à double face.
+async function buildVillainDeckStageDOM(code) {
+    const baseCode = code.replace(/[ab]$/, '');
+
+    if (currentVillainDeckExpert) {
+        const backData = await fetchAPI(baseCode + 'b');
+        if (backData) {
+            const frontData = await fetchAPI(baseCode + 'a') || await fetchAPI(baseCode);
+            const vDom = buildCardDOM(frontData || backData, getImageUrl(backData));
+            if (frontData) vDom.dataset.cardDataA = JSON.stringify(frontData);
+            vDom.dataset.cardDataB = JSON.stringify(backData);
+            if (backData.health !== undefined) vDom.dataset.damage = backData.health;
+            return { dom: vDom, flipped: true };
+        }
+    }
+
+    const vData = await fetchAPI(code) || await fetchAPI(baseCode);
+    return { dom: vData ? buildCardDOM(vData) : null, flipped: false };
+}
+
 btnLoadVillain.addEventListener('click', async () => {
     const vId = selectedVillainId;
 
@@ -871,9 +900,20 @@ btnLoadVillain.addEventListener('click', async () => {
     clearScenarioBoard();
 
     const villainDef = MARVEL_DB.villains.find(v => v.id === vId);
-    
-    currentVillainStages = villainDef.stages || [];
-    currentVillainStageIndex = isExpert ? 1 : 0; 
+
+    currentVillainIsDeck = !!(villainDef.villain_deck && villainDef.villain_deck.length > 0);
+    currentVillainDeckExpert = currentVillainIsDeck && isExpert;
+
+    if (currentVillainIsDeck) {
+        // Mélange le deck de méchants : chaque partie tire un méchant différent au hasard.
+        // Toujours index 0 (pas de "stage 2" distincte) ; l'expert se joue via la face B.
+        currentVillainStages = [...villainDef.villain_deck];
+        shuffleArray(currentVillainStages);
+        currentVillainStageIndex = 0;
+    } else {
+        currentVillainStages = villainDef.stages || [];
+        currentVillainStageIndex = isExpert ? 1 : 0;
+    }
     currentVillainSchemes = villainDef.schemes || [];
     currentSchemeIndex = 0;
 
@@ -887,16 +927,13 @@ btnLoadVillain.addEventListener('click', async () => {
     });
 
     const spawnX = CENTER_X;
-    const spawnY = CENTER_Y - 400; 
+    const spawnY = CENTER_Y - 400;
 
     // --- CHARGEMENT DU MÉCHANT ---
     if (currentVillainStages.length > currentVillainStageIndex) {
         let vCode = currentVillainStages[currentVillainStageIndex];
-        let vData = await fetchAPI(vCode) || await fetchAPI(vCode.replace(/[ab]$/, ''));
-        if (vData) {
-            let vDom = buildCardDOM(vData);
-            putOnBoardAt(vDom, spawnX, spawnY, false);
-        }
+        let { dom: vDom, flipped } = await buildVillainDeckStageDOM(vCode);
+        if (vDom) putOnBoardAt(vDom, spawnX, spawnY, flipped);
     }
 
     // --- CHARGEMENT DE LA MANIGANCE PRINCIPALE ---
@@ -2006,11 +2043,8 @@ menuNextVillain.addEventListener('click', async () => {
         let newIdx = setAsideCards.indexOf(nextCode);
         if (newIdx !== -1) setAsideCards.splice(newIdx, 1);
 
-        let vData = await fetchAPI(nextCode);
-        if (vData) {
-            let vDom = buildCardDOM(vData);
-            putOnBoardAt(vDom, x, y, false);
-        }
+        let { dom: vDom, flipped } = await buildVillainDeckStageDOM(nextCode);
+        if (vDom) putOnBoardAt(vDom, x, y, flipped);
         saveGameState();
     }
     hideAllMenus();
@@ -2508,6 +2542,7 @@ function saveGameState(isAutoSave = false) {
             
             currentVillainStages, currentVillainStageIndex,
             currentVillainSchemes, currentSchemeIndex,
+            currentVillainIsDeck, currentVillainDeckExpert,
             currentPhaseIndex: currentPhaseIndex,
             
             boardPiles: {
@@ -2655,6 +2690,8 @@ function loadGameState() {
         currentVillainStageIndex = state.currentVillainStageIndex || 0;
         currentVillainSchemes = state.currentVillainSchemes || [];
         currentSchemeIndex = state.currentSchemeIndex || 0;
+        currentVillainIsDeck = state.currentVillainIsDeck || false;
+        currentVillainDeckExpert = state.currentVillainDeckExpert || false;
 
         boardX = state.boardX || (-CENTER_X + window.innerWidth / 2);
         boardY = state.boardY || (-CENTER_Y + window.innerHeight / 2);
