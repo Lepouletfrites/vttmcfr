@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "5.8"; // Ajout: scénarios multi-méchants (multi_villains) + jeton de scénario
+const GAME_VERSION = "5.9"; // Fix: les cartes de stade/manigance remplacées repartent en Cartes de Côté au lieu de disparaître
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -2052,8 +2052,12 @@ menuNextScheme.addEventListener('click', async () => {
         
         let codeIdx = setAsideCards.indexOf(oldRawCode) !== -1 ? setAsideCards.indexOf(oldRawCode) : setAsideCards.indexOf(oldBaseCode);
         if(codeIdx !== -1) setAsideCards.splice(codeIdx, 1);
-        
-        targetCard.remove(); 
+
+        targetCard.remove();
+        // Une carte retirée du plateau ne disparaît jamais du jeu : elle repart dans les
+        // "Cartes de Côté", d'où on peut la remettre en jeu manuellement (ex: un effet qui
+        // exige plusieurs manigances/étapes en jeu à la fois).
+        if (!setAsideCards.includes(oldRawCode)) setAsideCards.push(oldRawCode);
         currentSchemeIndex++;
         
         let nextRawCode = currentVillainSchemes[currentSchemeIndex];
@@ -2097,6 +2101,8 @@ menuNextVillain.addEventListener('click', async () => {
             if (codeIdx !== -1) setAsideCards.splice(codeIdx, 1);
 
             targetCard.remove();
+            // Repart dans les "Cartes de Côté" plutôt que de disparaître : récupérable au besoin.
+            if (!setAsideCards.includes(oldCode)) setAsideCards.push(oldCode);
             idx++;
             let nextCode = stages[idx];
 
@@ -2117,6 +2123,8 @@ menuNextVillain.addEventListener('click', async () => {
             if(codeIdx !== -1) setAsideCards.splice(codeIdx, 1);
 
             targetCard.remove();
+            // Repart dans les "Cartes de Côté" plutôt que de disparaître : récupérable au besoin.
+            if (!setAsideCards.includes(oldCode)) setAsideCards.push(oldCode);
             currentVillainStageIndex++;
             let nextCode = currentVillainStages[currentVillainStageIndex];
 
@@ -2522,20 +2530,11 @@ async function openInspectModal(pileType) {
 
         item.querySelector('button').addEventListener('click', () => {
             pile.splice(i, 1); updateDeckCounters();
-            
-            if (pileType === 'out-of-play') {
-                if (currentVillainSchemes.some(s => s.replace(/[ab]$/,'') === code.replace(/[ab]$/,''))) {
-                    let mainDom = document.getElementById('main-scheme-element');
-                    if (mainDom) mainDom.remove();
-                }
-                if (currentVillainStages.includes(code)) {
-                    let oldStage = currentVillainStages[currentVillainStageIndex];
-                    document.querySelectorAll('.card').forEach(c => {
-                        if (c.dataset.code === oldStage) c.remove();
-                    });
-                }
-            }
 
+            // Remettre une carte "mise de côté" en jeu ne retire plus la manigance/étape
+            // actuellement active : le joueur peut volontairement avoir plusieurs stades/méchants
+            // en jeu en même temps si une situation l'exige. C'est à lui de gérer/retirer
+            // manuellement s'il ne veut pas les deux à la fois.
             const cardDOM = buildCardDOM(cardData);
             
             if (pileType.includes('player')) putInHand(cardDOM); 

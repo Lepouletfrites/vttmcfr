@@ -299,15 +299,17 @@ const MARVEL_DB = {
             schemes: ["27116a"],
             mandatory_modulars: ["symbiotic_strength"],
             default_modulars: ["goblin_gear"],
-            start_on_board: ["27117a","27118a","27119a"]
+            start_on_board: ["27117a","27118a","27119a"],
+            jeton: true
         },
         {
             id: "sabretooth",
             name: "Dents-de-Sabre", 
             card_set_code: "sabretooth", 
-            stages: [], 
-            schemes: [], 
-            default_modulars: ["brotherhood"] 
+            stages: ["32060","32061","32062"], 
+            schemes: ["32063","32064"], 
+            default_modulars: ["brotherhood","mystique"],
+            start_on_board: ["32065a","32066"] 
         },
         { id: "sentinel", name: "Sentinelle", card_set_code: "sentinel", stages: [], schemes: [], default_modulars: ["zero_tolerance"] },
         { id: "master_mold", name: "Moule Initial", card_set_code: "master_mold", stages: [], schemes: [], default_modulars: ["sentinels"] },
