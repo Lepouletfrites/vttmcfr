@@ -331,7 +331,7 @@ const MARVEL_DB = {
             schemes: ["32112","32113"],
             mandatory_modulars: ["sentinels"], 
             default_modulars: ["zero_tolerance"],
-            start_on_board: ["32088a","32104"] 
+            start_on_board: ["32172b"] 
         },
         { id: "mansion_attack", name: "Attaque de l'Institut", card_set_code: "mansion_attack", stages: [], schemes: [], default_modulars: ["brotherhood"] },
         { id: "magneto_villain", name: "Magnéto (Méchant)", card_set_code: "magneto_villain", stages: [], schemes: [], default_modulars: ["acolytes"] },
