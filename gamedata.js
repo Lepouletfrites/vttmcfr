@@ -334,7 +334,16 @@ const MARVEL_DB = {
             start_on_board: ["32172b"] 
         },
         { id: "mansion_attack", name: "Attaque de l'Institut", card_set_code: "mansion_attack", stages: [], schemes: [], default_modulars: ["brotherhood"] },
-        { id: "magneto_villain", name: "Magnéto (Méchant)", card_set_code: "magneto_villain", stages: [], schemes: [], default_modulars: ["acolytes"] },
+        { 
+            id: "magneto_villain", 
+            name: "Magnéto (Méchant)", 
+            card_set_code: "magneto_villain", 
+            stages: ["32138","32139","32140"], 
+            schemes: ["32141","32142","32143"], 
+            default_modulars: ["acolytes"],
+            start_on_board: ["32144a"],
+            start_set_aside: ["32145a"]  
+        },
         { id: "magog", name: "Magog", card_set_code: "magog", stages: [], schemes: [], default_modulars: ["crime"] },
         { id: "spiral", name: "Spirale", card_set_code: "spiral", stages: [], schemes: [], default_modulars: ["fantasy"] },
         { id: "mojo", name: "Mojo", card_set_code: "mojo", stages: [], schemes: [], default_modulars: ["sitcom"] },
