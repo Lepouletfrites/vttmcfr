@@ -218,7 +218,18 @@ const MARVEL_DB = {
             schemes: ["21074","21075"], 
             default_modulars: ["black_order","armies_of_titan"] 
         },
-        { id: "tower_defense", name: "Défense de la Tour", card_set_code: "tower_defense", stages: [], schemes: [], default_modulars: ["black_order"] },
+        { 
+            id: "tower_defense", 
+            name: "Défense de la Tour", 
+            card_set_code: "tower_defense", 
+            multi_villains: [
+                { id: "thanos_side", name: "Thanos", stages: ["21092", "21093", "21094"] },
+                { id: "maw_side", name: "Ebony Maw", stages: ["21095", "21096", "21097"] }
+            ], 
+            schemes: ["21098","21099"], 
+            default_modulars: ["black_order"],
+            jeton: true
+        },
         {
             id: "thanos",
             name: "Thanos (L'Ombre du Titan Fou)",
@@ -290,7 +301,14 @@ const MARVEL_DB = {
             default_modulars: ["goblin_gear"],
             start_on_board: ["27117a","27118a","27119a"]
         },
-        { id: "sabretooth", name: "Dents-de-Sabre", card_set_code: "sabretooth", stages: [], schemes: [], default_modulars: ["brotherhood"] },
+        {
+            id: "sabretooth",
+            name: "Dents-de-Sabre", 
+            card_set_code: "sabretooth", 
+            stages: [], 
+            schemes: [], 
+            default_modulars: ["brotherhood"] 
+        },
         { id: "sentinel", name: "Sentinelle", card_set_code: "sentinel", stages: [], schemes: [], default_modulars: ["zero_tolerance"] },
         { id: "master_mold", name: "Moule Initial", card_set_code: "master_mold", stages: [], schemes: [], default_modulars: ["sentinels"] },
         { id: "mansion_attack", name: "Attaque de l'Institut", card_set_code: "mansion_attack", stages: [], schemes: [], default_modulars: ["brotherhood"] },
