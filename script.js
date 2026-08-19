@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "6.0"; // Ajout: choix manuel de la manigance active + affichage des scénarios multi-méchants/deck dans le sélecteur
+const GAME_VERSION = "6.1"; // Fix: orientation paysage/portrait suit la face réellement affichée après un flip
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -1667,12 +1667,20 @@ function updateDeckCounters() {
 
 function updateCardOrientation(card) {
     if (!card.dataset || !card.dataset.cardData) return;
-    let data = JSON.parse(card.dataset.cardData);
-    let isFlipped = card.dataset.flipped === 'true'; 
-    
-    if (data.type_code === 'main_scheme') {
-        card.classList.add('landscape');
-    } else if (!isFlipped && (data.type_code === 'side_scheme' || data.type_code === 'player_side_scheme')) {
+    let isFlipped = card.dataset.flipped === 'true';
+
+    // L'orientation doit suivre la face RÉELLEMENT affichée, pas toujours la face A : une carte
+    // peut démarrer en manigance/side scheme (paysage) et devenir, une fois retournée, un allié
+    // ou un personnage portrait classique (ou l'inverse). Si la face retournée n'a pas de données
+    // propres (juste le dos générique de la carte), on ne force pas le paysage.
+    let data = null;
+    if (isFlipped) {
+        if (card.dataset.cardDataB) data = JSON.parse(card.dataset.cardDataB);
+    } else {
+        data = JSON.parse(card.dataset.cardData);
+    }
+
+    if (data && (data.type_code === 'main_scheme' || data.type_code === 'side_scheme' || data.type_code === 'player_side_scheme')) {
         card.classList.add('landscape');
     } else {
         card.classList.remove('landscape');
