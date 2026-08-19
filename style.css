@@ -212,6 +212,24 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
 .board-pile[data-pile^="villain-sec-deck"] { background: linear-gradient(135deg, #c9601f, #e8873a); }
 .board-pile[data-pile^="villain-sec-discard"] { background: var(--bg-panel-soft); border: 2px dashed var(--accent-orange); color: var(--accent-orange); }
 
+/* Jeton de scénario mobile (rond mauve) : marqueur libre non lié à une carte, ex. pour indiquer
+   quel méchant est actif dans un scénario multi-méchants. */
+.jeton-token {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #b98ae0, var(--accent-purple) 70%);
+    border: 3px solid rgba(255,255,255,0.6);
+    box-shadow: var(--shadow-md), 0 0 0 2px rgba(155, 107, 214, 0.35);
+    cursor: pointer;
+    user-select: none;
+    z-index: 8;
+    touch-action: none;
+    transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.jeton-token:hover { transform: scale(1.08); box-shadow: var(--shadow-lg), 0 0 0 2px rgba(155, 107, 214, 0.5); }
+
 /* ==========================================
    HUD DU BAS
    ========================================== */

@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "5.7"; // Ajout: support des scénarios "deck de méchants" (villain_deck)
+const GAME_VERSION = "5.8"; // Ajout: scénarios multi-méchants (multi_villains) + jeton de scénario
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -25,6 +25,7 @@ if (typeof CARDS_DATA !== 'undefined') {
 // --- CONFIGURATION & DOM CONSTANTS ---
 const boardWrapper = document.getElementById('board-wrapper');
 const board = document.getElementById('game-board');
+const boardJetonToken = document.getElementById('board-jeton-token');
 
 // Boutons du menu modal
 const btnOpenMenu = document.getElementById('btn-open-menu');
@@ -856,6 +857,8 @@ function clearScenarioBoard() {
         if (vdd) vdd.classList.add('hidden');
     }
 
+    boardJetonToken.classList.add('hidden');
+
     encounterDeck = [];
     encounterDiscardPile = [];
     villainSecDecks = [[], [], []];
@@ -901,10 +904,19 @@ btnLoadVillain.addEventListener('click', async () => {
 
     const villainDef = MARVEL_DB.villains.find(v => v.id === vId);
 
-    currentVillainIsDeck = !!(villainDef.villain_deck && villainDef.villain_deck.length > 0);
+    // Scénarios multi-méchants (ex: Avengers Tower) : plusieurs méchants indépendants posés en
+    // même temps sur le plateau, chacun avec ses propres étapes qu'on avance séparément. Leur
+    // progression est stockée directement sur chaque carte (dataset.multiVillainStages/-StageIndex)
+    // plutôt que dans les variables globales currentVillainStages, réservées à UN méchant à la fois.
+    const isMultiVillain = !!(villainDef.multi_villains && villainDef.multi_villains.length > 0);
+
+    currentVillainIsDeck = !isMultiVillain && !!(villainDef.villain_deck && villainDef.villain_deck.length > 0);
     currentVillainDeckExpert = currentVillainIsDeck && isExpert;
 
-    if (currentVillainIsDeck) {
+    if (isMultiVillain) {
+        currentVillainStages = [];
+        currentVillainStageIndex = 0;
+    } else if (currentVillainIsDeck) {
         // Mélange le deck de méchants : chaque partie tire un méchant différent au hasard.
         // Toujours index 0 (pas de "stage 2" distincte) ; l'expert se joue via la face B.
         currentVillainStages = [...villainDef.villain_deck];
@@ -929,8 +941,33 @@ btnLoadVillain.addEventListener('click', async () => {
     const spawnX = CENTER_X;
     const spawnY = CENTER_Y - 400;
 
-    // --- CHARGEMENT DU MÉCHANT ---
-    if (currentVillainStages.length > currentVillainStageIndex) {
+    // --- CHARGEMENT DU/DES MÉCHANT(S) ---
+    if (isMultiVillain) {
+        const spacing = 300;
+        const startX = spawnX - (spacing * (villainDef.multi_villains.length - 1)) / 2;
+
+        for (let i = 0; i < villainDef.multi_villains.length; i++) {
+            const mv = villainDef.multi_villains[i];
+            const stages = mv.stages || [];
+            const stageIdx = isExpert ? Math.min(1, stages.length - 1) : 0;
+
+            stages.forEach(code => {
+                if (code !== stages[stageIdx]) setAsideCards.push(code);
+            });
+
+            if (stages.length > stageIdx) {
+                const vCode = stages[stageIdx];
+                const vData = await fetchAPI(vCode) || await fetchAPI(vCode.replace(/[ab]$/, ''));
+                if (vData) {
+                    const vDom = buildCardDOM(vData);
+                    vDom.dataset.multiVillainStages = JSON.stringify(stages);
+                    vDom.dataset.multiVillainStageIndex = stageIdx;
+                    if (mv.name) vDom.dataset.multiVillainName = mv.name;
+                    putOnBoardAt(vDom, startX + i * spacing, spawnY, false);
+                }
+            }
+        }
+    } else if (currentVillainStages.length > currentVillainStageIndex) {
         let vCode = currentVillainStages[currentVillainStageIndex];
         let { dom: vDom, flipped } = await buildVillainDeckStageDOM(vCode);
         if (vDom) putOnBoardAt(vDom, spawnX, spawnY, flipped);
@@ -962,7 +999,18 @@ btnLoadVillain.addEventListener('click', async () => {
             putOnBoardAt(sDom, spawnX - 250, spawnY, startFlipped);
         }
     }
-    
+
+    // --- JETON DE SCÉNARIO ---
+    // Marqueur libre optionnel (ex: pour pointer quel méchant est actif dans un scénario
+    // multi-méchants, ou toute autre indication propre au scénario) ; le joueur le déplace
+    // lui-même à la souris/au doigt, rien n'est automatique une fois posé.
+    if (villainDef.jeton === true) {
+        boardJetonToken.style.left = (spawnX + 200) + 'px';
+        boardJetonToken.style.top = (spawnY - 80) + 'px';
+        boardJetonToken.style.zIndex = topZIndex++;
+        boardJetonToken.classList.remove('hidden');
+    }
+
     vSecCount = 0;
     villainSecDecks = [[], [], []];
     villainSecDiscards = [[], [], []];
@@ -1961,9 +2009,13 @@ function setupCardInteractions(card) {
             }
         }
         
-        if (data.type_code === 'villain' && currentVillainStageIndex + 1 < currentVillainStages.length) {
-            menuNextVillain.classList.remove('hidden');
-            showSeparator = true;
+        if (data.type_code === 'villain') {
+            const stages = card.dataset.multiVillainStages ? JSON.parse(card.dataset.multiVillainStages) : currentVillainStages;
+            const idx = card.dataset.multiVillainStages ? (parseInt(card.dataset.multiVillainStageIndex) || 0) : currentVillainStageIndex;
+            if (idx + 1 < stages.length) {
+                menuNextVillain.classList.remove('hidden');
+                showSeparator = true;
+            }
         }
 
         if (showSeparator) menuProgressionSeparator.classList.remove('hidden');
@@ -2031,20 +2083,49 @@ menuNextVillain.addEventListener('click', async () => {
     if (targetCard) {
         let x = parseFloat(targetCard.style.left);
         let y = parseFloat(targetCard.style.top);
-        
-        let oldCode = currentVillainStages[currentVillainStageIndex];
-        let codeIdx = setAsideCards.indexOf(oldCode);
-        if(codeIdx !== -1) setAsideCards.splice(codeIdx, 1);
-        
-        targetCard.remove();
-        currentVillainStageIndex++;
-        let nextCode = currentVillainStages[currentVillainStageIndex];
-        
-        let newIdx = setAsideCards.indexOf(nextCode);
-        if (newIdx !== -1) setAsideCards.splice(newIdx, 1);
 
-        let { dom: vDom, flipped } = await buildVillainDeckStageDOM(nextCode);
-        if (vDom) putOnBoardAt(vDom, x, y, flipped);
+        // Méchant d'un scénario multi-méchants (ex: Avengers Tower) : sa progression d'étapes
+        // vit sur la carte elle-même (dataset.multiVillainStages/-StageIndex), indépendante des
+        // autres méchants du plateau, plutôt que dans les variables globales currentVillainStages.
+        if (targetCard.dataset.multiVillainStages) {
+            const stages = JSON.parse(targetCard.dataset.multiVillainStages);
+            let idx = parseInt(targetCard.dataset.multiVillainStageIndex) || 0;
+            const villainName = targetCard.dataset.multiVillainName || '';
+
+            let oldCode = stages[idx];
+            let codeIdx = setAsideCards.indexOf(oldCode);
+            if (codeIdx !== -1) setAsideCards.splice(codeIdx, 1);
+
+            targetCard.remove();
+            idx++;
+            let nextCode = stages[idx];
+
+            let newIdx = setAsideCards.indexOf(nextCode);
+            if (newIdx !== -1) setAsideCards.splice(newIdx, 1);
+
+            let vData = await fetchAPI(nextCode) || await fetchAPI(nextCode.replace(/[ab]$/, ''));
+            if (vData) {
+                let vDom = buildCardDOM(vData);
+                vDom.dataset.multiVillainStages = JSON.stringify(stages);
+                vDom.dataset.multiVillainStageIndex = idx;
+                if (villainName) vDom.dataset.multiVillainName = villainName;
+                putOnBoardAt(vDom, x, y, false);
+            }
+        } else {
+            let oldCode = currentVillainStages[currentVillainStageIndex];
+            let codeIdx = setAsideCards.indexOf(oldCode);
+            if(codeIdx !== -1) setAsideCards.splice(codeIdx, 1);
+
+            targetCard.remove();
+            currentVillainStageIndex++;
+            let nextCode = currentVillainStages[currentVillainStageIndex];
+
+            let newIdx = setAsideCards.indexOf(nextCode);
+            if (newIdx !== -1) setAsideCards.splice(newIdx, 1);
+
+            let { dom: vDom, flipped } = await buildVillainDeckStageDOM(nextCode);
+            if (vDom) putOnBoardAt(vDom, x, y, flipped);
+        }
         saveGameState();
     }
     hideAllMenus();
@@ -2172,6 +2253,61 @@ function makeDraggable(element) {
         }
     }
 }
+
+// Glisser le jeton de scénario (rond mauve libre, cf. villainDef.jeton). Volontairement séparé de
+// makeDraggable() : un jeton n'est pas une carte, il n'a ni défausse, ni main, ni face cachée —
+// on ne veut aucune de ces règles quand on le pose sur une pile ou la zone de main.
+function makeMarkerDraggable(element) {
+    let isDragging = false, startX, startY;
+
+    function boardCoordsFor(clientX, clientY) {
+        const rect = boardWrapper.getBoundingClientRect();
+        return {
+            x: (clientX - rect.left - boardX) / scale - element.offsetWidth / 2,
+            y: (clientY - rect.top - boardY) / scale - element.offsetHeight / 2
+        };
+    }
+
+    function startDrag(clientX, clientY) {
+        isDragging = true;
+        startX = clientX; startY = clientY;
+        element.style.zIndex = topZIndex++;
+    }
+
+    function moveDrag(clientX, clientY) {
+        if (!isDragging) return;
+        const { x, y } = boardCoordsFor(clientX, clientY);
+        element.style.left = x + 'px';
+        element.style.top = y + 'px';
+    }
+
+    function endDrag() {
+        if (!isDragging) return;
+        isDragging = false;
+        saveGameState();
+    }
+
+    element.addEventListener('mousedown', (e) => {
+        if (e.button === 2) return;
+        e.preventDefault(); e.stopPropagation();
+        startDrag(e.clientX, e.clientY);
+        const onMove = (ev) => moveDrag(ev.clientX, ev.clientY);
+        const onUp = () => { endDrag(); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    });
+
+    element.addEventListener('touchstart', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const t = e.touches[0];
+        startDrag(t.clientX, t.clientY);
+        const onMove = (ev) => { ev.preventDefault(); moveDrag(ev.touches[0].clientX, ev.touches[0].clientY); };
+        const onEnd = () => { endDrag(); document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd); };
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onEnd);
+    }, { passive: false });
+}
+makeMarkerDraggable(boardJetonToken);
 
 // --- MENUS CONTEXTUELS ET ACTIONS ---
 document.addEventListener('click', (e) => {
@@ -2558,7 +2694,8 @@ function saveGameState(isAutoSave = false) {
                     hidden: document.getElementById('board-villain-discard-'+i).classList.contains('hidden'),
                     left: document.getElementById('board-villain-discard-'+i).style.left,
                     top: document.getElementById('board-villain-discard-'+i).style.top
-                }))
+                })),
+                jetonToken: { hidden: boardJetonToken.classList.contains('hidden'), left: boardJetonToken.style.left, top: boardJetonToken.style.top, zIndex: boardJetonToken.style.zIndex }
             },
             
             cards: []
@@ -2734,6 +2871,13 @@ function loadGameState() {
                         dom.style.top = vdd.top;
                     }
                 });
+            }
+            if (state.boardPiles.jetonToken) {
+                const jt = state.boardPiles.jetonToken;
+                boardJetonToken.classList.toggle('hidden', jt.hidden);
+                if (jt.left) boardJetonToken.style.left = jt.left;
+                if (jt.top) boardJetonToken.style.top = jt.top;
+                if (jt.zIndex) boardJetonToken.style.zIndex = jt.zIndex;
             }
         }
 

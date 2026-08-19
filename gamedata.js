@@ -238,7 +238,16 @@ const MARVEL_DB = {
             start_on_board: ["21139a","21140","21143"],
             start_set_aside: ["21142","21144","21145","21141"]
         },
-        { id: "loki", name: "Loki", card_set_code: "loki", stages: [], schemes: [], default_modulars: ["enchantress"] },
+        { 
+            id: "loki",
+            name: "Loki",
+            card_set_code: "loki",
+            villain_deck: ["21160", "21161", "21162", "21163", "21164"],
+            schemes: ["21165"],
+            mandatory_modulars: ["infinity_gauntlet"],
+            default_modulars: ["enchantress","frost_giants"],
+            start_on_board: ["21167"]
+        },
         { id: "the_hood", name: "Le Capuchon (The Hood)", card_set_code: "the_hood", stages: [], schemes: [], default_modulars: ["streets_of_mayhem"] },
         {
              id: "sandman",
@@ -260,9 +269,27 @@ const MARVEL_DB = {
             default_modulars: ["down_to_earth"],
             start_on_board: ["27077a"]
         },
-        { id: "mysterio", name: "Mystério", card_set_code: "mysterio", stages: [], schemes: [], default_modulars: ["personal_nightmare"] },
+        {
+            id: "mysterio",
+            name: "Mystério",
+            card_set_code: "mysterio",
+            stages: ["27084","27085","27086"],
+            schemes: ["27087","27088"],
+            mandatory_modulars: ["personal_nightmare"],
+            default_modulars: ["whispers_of_paranoia"],
+            start_on_board: ["27091"]
+        },
         { id: "sinister_six", name: "Les Six Sinistres", card_set_code: "sinister_six", stages: [], schemes: [], default_modulars: ["guerilla_tactics"] },
-        { id: "venom_goblin", name: "Venom-Bouffon", card_set_code: "venom_goblin", stages: [], schemes: [], default_modulars: ["symbiotic_strength"] },
+        {
+            id: "venom_goblin",
+            name: "Venom-Bouffon",
+            card_set_code: "venom_goblin",
+            stages: ["27113","27114","27115"],
+            schemes: ["27116a"],
+            mandatory_modulars: ["symbiotic_strength"],
+            default_modulars: ["goblin_gear"],
+            start_on_board: ["27117a","27118a","27119a"]
+        },
         { id: "sabretooth", name: "Dents-de-Sabre", card_set_code: "sabretooth", stages: [], schemes: [], default_modulars: ["brotherhood"] },
         { id: "sentinel", name: "Sentinelle", card_set_code: "sentinel", stages: [], schemes: [], default_modulars: ["zero_tolerance"] },
         { id: "master_mold", name: "Moule Initial", card_set_code: "master_mold", stages: [], schemes: [], default_modulars: ["sentinels"] },
