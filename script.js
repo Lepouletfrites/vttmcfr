@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "5.9"; // Fix: les cartes de stade/manigance remplacées repartent en Cartes de Côté au lieu de disparaître
+const GAME_VERSION = "6.0"; // Ajout: choix manuel de la manigance active + affichage des scénarios multi-méchants/deck dans le sélecteur
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -70,6 +70,7 @@ const modalClose = document.getElementById('modal-close');
 
 const menuNextScheme = document.getElementById('menu-next-scheme');
 const menuNextVillain = document.getElementById('menu-next-villain');
+const menuSetActiveScheme = document.getElementById('menu-set-active-scheme');
 const menuProgressionSeparator = document.getElementById('menu-progression-separator');
 
 // --- BOUTONS ADDITIONNELS ---
@@ -313,7 +314,12 @@ function initMenus() {
 async function renderVillainPicker() {
     if (typeof MARVEL_DB === 'undefined' || !villainPicker) return;
 
-    const list = MARVEL_DB.villains.filter(v => v.card_set_code || (v.stages && v.stages.length > 0));
+    const list = MARVEL_DB.villains.filter(v =>
+        v.card_set_code ||
+        (v.stages && v.stages.length > 0) ||
+        (v.villain_deck && v.villain_deck.length > 0) ||
+        (v.multi_villains && v.multi_villains.length > 0)
+    );
     if (list.length === 0) {
         villainPicker.innerHTML = '<div class="villain-picker-empty">Aucun méchant disponible.</div>';
         return;
@@ -321,7 +327,12 @@ async function renderVillainPicker() {
 
     const tilesData = await Promise.all(list.map(async v => {
         let thumbUrl = null;
-        const stageCode = v.stages && v.stages[0];
+        // Ordre de repli pour la vignette : étape classique, puis premier méchant d'un deck
+        // aléatoire (villain_deck), puis premier méchant d'un scénario multi-méchants
+        // (multi_villains) — comme ça on voit tout de suite de quel scénario il s'agit.
+        const stageCode = (v.stages && v.stages[0])
+            || (v.villain_deck && v.villain_deck[0])
+            || (v.multi_villains && v.multi_villains[0] && v.multi_villains[0].stages && v.multi_villains[0].stages[0]);
         if (stageCode) {
             const cardData = await fetchAPI(stageCode.replace(/[ab]$/, '')) || await fetchAPI(stageCode);
             if (cardData) thumbUrl = getImageUrl(cardData);
@@ -1986,6 +1997,7 @@ function setupCardInteractions(card) {
 
         menuNextScheme.classList.add('hidden');
         menuNextVillain.classList.add('hidden');
+        menuSetActiveScheme.classList.add('hidden');
         menuProgressionSeparator.classList.add('hidden');
 
         document.getElementById('menu-add-accel').classList.add('hidden');
@@ -2003,9 +2015,17 @@ function setupCardInteractions(card) {
             document.getElementById('menu-add-accel').classList.remove('hidden');
             document.getElementById('menu-sub-accel').classList.remove('hidden');
             showSeparator = true;
-            
+
             if (currentSchemeIndex + 1 < currentVillainSchemes.length) {
                 menuNextScheme.classList.remove('hidden');
+            }
+
+            // Plusieurs manigances peuvent être en jeu à la fois (cf. rappel depuis "Cartes de
+            // Côté") : celle-ci n'est proposée comme "active" que si elle ne l'est pas déjà —
+            // c'est elle qui sera suivie pour l'ajout automatique de menace en phase méchant.
+            if (card.id !== 'main-scheme-element') {
+                menuSetActiveScheme.classList.remove('hidden');
+                showSeparator = true;
             }
         }
         
@@ -2078,6 +2098,19 @@ menuNextScheme.addEventListener('click', async () => {
             sDom.dataset.acceleration = carryOverAcceleration;
             putOnBoardAt(sDom, x, y, false);
         }
+        saveGameState();
+    }
+    hideAllMenus();
+});
+
+// Choisit quelle manigance (parmi plusieurs en jeu, cf. le rappel depuis "Cartes de Côté")
+// est la manigance "officielle" : celle avec l'id main-scheme-element, seule suivie par le
+// calcul automatique de menace en phase méchant. Les autres restent en jeu, gérées à la main.
+menuSetActiveScheme.addEventListener('click', () => {
+    if (targetCard) {
+        const previousActive = document.getElementById('main-scheme-element');
+        if (previousActive && previousActive !== targetCard) previousActive.id = '';
+        targetCard.id = 'main-scheme-element';
         saveGameState();
     }
     hideAllMenus();

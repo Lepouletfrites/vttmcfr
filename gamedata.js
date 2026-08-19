@@ -226,7 +226,8 @@ const MARVEL_DB = {
                 { id: "thanos_side", name: "Thanos", stages: ["21092", "21093", "21094"] },
                 { id: "maw_side", name: "Ebony Maw", stages: ["21095", "21096", "21097"] }
             ], 
-            schemes: ["21098","21099"], 
+            schemes: ["21098"], 
+            start_on_board: ["21099"],
             default_modulars: ["black_order"],
             jeton: true
         },
@@ -311,8 +312,27 @@ const MARVEL_DB = {
             default_modulars: ["brotherhood","mystique"],
             start_on_board: ["32065a","32066"] 
         },
-        { id: "sentinel", name: "Sentinelle", card_set_code: "sentinel", stages: [], schemes: [], default_modulars: ["zero_tolerance"] },
-        { id: "master_mold", name: "Moule Initial", card_set_code: "master_mold", stages: [], schemes: [], default_modulars: ["sentinels"] },
+        {
+            id: "sentinel", 
+            name: "Sentinelle", 
+            card_set_code: "sentinel", 
+            stages: ["32084","32085","32086"], 
+            schemes: ["32087"],
+            mandatory_modulars: ["zero_tolerance"], 
+            default_modulars: ["sentinels"],
+            start_on_board: ["32088a","32104"],
+            start_set_aside: ["32089","32090","32091","32092"] 
+        },
+        {
+            id: "master_mold", 
+            name: "Moule Initial", 
+            card_set_code: "master_mold", 
+            stages: ["32109","32110","32111"], 
+            schemes: ["32112","32113"],
+            mandatory_modulars: ["sentinels"], 
+            default_modulars: ["zero_tolerance"],
+            start_on_board: ["32088a","32104"] 
+        },
         { id: "mansion_attack", name: "Attaque de l'Institut", card_set_code: "mansion_attack", stages: [], schemes: [], default_modulars: ["brotherhood"] },
         { id: "magneto_villain", name: "Magnéto (Méchant)", card_set_code: "magneto_villain", stages: [], schemes: [], default_modulars: ["acolytes"] },
         { id: "magog", name: "Magog", card_set_code: "magog", stages: [], schemes: [], default_modulars: ["crime"] },
