@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "6.1"; // Fix: orientation paysage/portrait suit la face réellement affichée après un flip
+const GAME_VERSION = "6.2"; // Fix: l'escalade de menace en phase méchant s'applique à toutes les manigances principales en jeu, pas une seule
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -1254,33 +1254,42 @@ document.getElementById('btn-next-phase').addEventListener('click', async () => 
         });
         await drawToHandSize();
     }
-    if (currentPhaseIndex === 2) { 
-        let mainScheme = document.getElementById('main-scheme-element'); 
-        if (mainScheme) {
-            let threatToAdd = 1; 
-            let msData = JSON.parse(mainScheme.dataset.cardDataB || mainScheme.dataset.cardDataA || mainScheme.dataset.cardData);
-            
-            if (msData && msData.escalation_threat !== undefined) {
-                threatToAdd = msData.escalation_threat;
-            }
-
-            let accelerationCount = parseInt(mainScheme.dataset.acceleration) || 0;
-            document.querySelectorAll('.card').forEach(c => {
-                if (c.dataset.cardData && c.dataset.flipped !== 'true') {
-                    let d = JSON.parse(c.dataset.cardData);
-                    if (d.scheme_acceleration) {
-                        accelerationCount += d.scheme_acceleration;
-                    } 
-                    else if (d.text && (d.text.toLowerCase().includes('[acceleration]') || d.text.toLowerCase().includes('icon-acceleration') || d.text.toLowerCase().includes('accélération'))) {
-                        accelerationCount++;
-                    }
+    if (currentPhaseIndex === 2) {
+        // Bonus d'accélération (mot-clé "Accélération" imprimé sur des cartes en jeu) : un bonus
+        // partagé pour le tour, pas par manigance — calculé une seule fois.
+        let sharedAccelBonus = 0;
+        document.querySelectorAll('.card').forEach(c => {
+            if (c.dataset.cardData && c.dataset.flipped !== 'true') {
+                let d = JSON.parse(c.dataset.cardData);
+                if (d.scheme_acceleration) {
+                    sharedAccelBonus += d.scheme_acceleration;
                 }
-            });
+                else if (d.text && (d.text.toLowerCase().includes('[acceleration]') || d.text.toLowerCase().includes('icon-acceleration') || d.text.toLowerCase().includes('accélération'))) {
+                    sharedAccelBonus++;
+                }
+            }
+        });
 
-            let val = parseInt(mainScheme.dataset.threat || 0) + threatToAdd + accelerationCount;
+        // Certains scénarios (ex: Venom-Bouffon avec ses 3 manigances Manhattan) ont PLUSIEURS
+        // manigances principales en jeu SIMULTANÉMENT, qui augmentent toutes chaque phase — pas
+        // seulement une carte unique #main-scheme-element. On applique donc la menace d'escalade
+        // à CHAQUE carte manigance principale actuellement posée sur le plateau, en lisant la
+        // face réellement affichée (comme pour l'orientation paysage/portrait).
+        document.querySelectorAll('#game-board .card').forEach(mainScheme => {
+            if (!mainScheme.dataset.cardData) return;
+            const isFlipped = mainScheme.dataset.flipped === 'true';
+            let msData = isFlipped
+                ? (mainScheme.dataset.cardDataB ? JSON.parse(mainScheme.dataset.cardDataB) : null)
+                : JSON.parse(mainScheme.dataset.cardData);
+            if (!msData || msData.type_code !== 'main_scheme') return;
+
+            let threatToAdd = msData.escalation_threat !== undefined ? msData.escalation_threat : 1;
+            let ownAcceleration = parseInt(mainScheme.dataset.acceleration) || 0;
+
+            let val = (parseInt(mainScheme.dataset.threat) || 0) + threatToAdd + ownAcceleration + sharedAccelBonus;
             mainScheme.dataset.threat = val;
             syncTokenVisuals(mainScheme);
-        }
+        });
     }
     if (currentPhaseIndex === 3) { 
         await drawCard('encounter');
