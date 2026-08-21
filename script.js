@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "6.3"; // Fix: le zoom d'une carte paysage a maintenant la même taille visuelle qu'en portrait
+const GAME_VERSION = "6.4"; // Ajustement: taille du zoom réduite à 80% (débordait sur la zone de main)
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
