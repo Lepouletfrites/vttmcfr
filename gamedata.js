@@ -123,7 +123,21 @@ const MARVEL_DB = {
         // --- Nouveaux Méchants (Avec card_set_code complétés) ---
         { id: "green_goblin_risky_business", name: "Le Bouffon Vert - Business en Risque", card_set_code: "risky_business", stages: [], schemes: [], default_modulars: ["goblin_gimmicks"] },
         { id: "green_goblin_mutagen_formula", name: "Le Bouffon Vert - Formule Mutagène", card_set_code: "mutagen_formula", stages: [], schemes: [], default_modulars: ["goblin_gimmicks"] },
-        { id: "wrecking_crew", name: "Les Démolisseurs", card_set_code: "wrecking_crew", stages: [], schemes: [], default_modulars: [] },
+        { 
+            id: "wrecking_crew", 
+            name: "Les Démolisseurs",
+            card_set_code: "wrecking_crew",
+            multi_villains: [
+                { id: "le_démolisseur", name: "Le Démolisseur", stages: ["07002"] },
+                { id: "le_boulet", name: "Le Boulet", stages: ["07017"] },
+                { id: "le_compresseur", name: "Le Compresseur", stages: ["07032"] },
+                { id: "le_bulldozer", name: "Le Bulldozer", stages: ["07046"] }
+            ], 
+            schemes: ["07001"],
+            default_modulars: [],
+            start_on_board: ["07004","07019","07034","07048"],
+            jeton: true
+        },
         { 
             id: "crossbones",
             name: "Crossbones",
@@ -223,8 +237,8 @@ const MARVEL_DB = {
             name: "Défense de la Tour", 
             card_set_code: "tower_defense", 
             multi_villains: [
-                { id: "thanos_side", name: "Thanos", stages: ["21092", "21093", "21094"] },
-                { id: "maw_side", name: "Ebony Maw", stages: ["21095", "21096", "21097"] }
+                { id: "proxima", name: "Proxima", stages: ["21092", "21093", "21094"] },
+                { id: "Corvus", name: "Corvus", stages: ["21095", "21096", "21097"] }
             ], 
             schemes: ["21098"], 
             start_on_board: ["21099"],
