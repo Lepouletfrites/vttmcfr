@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "6.2"; // Fix: l'escalade de menace en phase méchant s'applique à toutes les manigances principales en jeu, pas une seule
+const GAME_VERSION = "6.3"; // Fix: le zoom d'une carte paysage a maintenant la même taille visuelle qu'en portrait
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;

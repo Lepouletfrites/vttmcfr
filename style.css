@@ -109,11 +109,15 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
 /* ZOOM FLOTTANT GAUCHE               */
 /* --------------------------------- */
 #floating-zoom {
+    /* Pas de largeur fixe : le panneau s'ajuste à l'image (voir #floating-zoom img), qui est
+       elle bornée en HAUTEUR. Comme ça une carte paysage occupe autant de place visuellement
+       qu'une carte portrait, au lieu d'être écrasée par une largeur commune aux deux. */
     position: absolute;
     left: 20px;
     top: 80px;
-    width: 320px;
-    max-width: 45vw;
+    /* Assez large pour qu'une carte paysage (ratio ~1.4) puisse atteindre la même hauteur que le
+       portrait (max-height sur l'img) sans être bridée par la largeur avant d'y arriver. */
+    max-width: 70vw;
     /* Doit rester visible au-dessus des modales (mise en place, inspection de pile...)
        qui ont leur propre flou d'arrière-plan, sans quoi le zoom se retrouve caché derrière. */
     z-index: 20001;
@@ -127,9 +131,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
 }
 #floating-zoom:hover { transform: translateY(-2px); }
 #floating-zoom img {
-    width: 100%;
-    border-radius: calc(var(--radius-lg) - 3px);
     display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: calc(var(--radius-lg) - 3px);
 }
 
 /* ==========================================
@@ -510,7 +517,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
     .card.landscape.in-hand { width: 101px; height: 72px; }
     .board-pile { width: 100px; height: 140px; font-size: 0.7em; }
 
-    #floating-zoom { width: 280px; }
+    #floating-zoom img { max-height: 55vh; }
 }
 
 @media (max-width: 768px) {
@@ -518,7 +525,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
     .btn-menu { font-size: 0.95em !important; padding: 8px 10px !important; }
     #hero-tracker { margin-left: 0 !important; width: 100%; order: 3; justify-content: space-around; }
 
-    #floating-zoom { width: 220px; max-width: 70vw; left: 10px; top: 95px; }
+    #floating-zoom { max-width: 90vw; left: 10px; top: 95px; }
+    #floating-zoom img { max-height: 38vh; }
 
     #phase-panel { width: 150px; max-width: 50vw; top: 6px; right: 6px; padding: 6px; }
     #phase-panel h3 { font-size: 0.8em; }
@@ -553,5 +561,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
     .card.landscape.in-hand { width: 70px; height: 50px; }
     .board-pile { width: 70px; height: 98px; font-size: 0.6em; }
 
-    #floating-zoom { width: 180px; max-width: 80vw; }
+    #floating-zoom { max-width: 92vw; }
+    #floating-zoom img { max-height: 28vh; }
 }
