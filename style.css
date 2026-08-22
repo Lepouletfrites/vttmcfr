@@ -138,6 +138,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
     max-height: 56vh;
     border-radius: calc(var(--radius-lg) - 3px);
 }
+/* Une carte paysage lit très bien à une taille un peu plus modeste qu'une carte portrait. */
+#floating-zoom.zoom-landscape img {
+    max-height: 45vh;
+}
 
 /* ==========================================
    TRAQUEUR DE HÉROS
@@ -518,6 +522,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
     .board-pile { width: 100px; height: 140px; font-size: 0.7em; }
 
     #floating-zoom img { max-height: 44vh; }
+    #floating-zoom.zoom-landscape img { max-height: 36vh; }
 }
 
 @media (max-width: 768px) {
@@ -527,6 +532,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
 
     #floating-zoom { max-width: 90vw; left: 10px; top: 95px; }
     #floating-zoom img { max-height: 30vh; }
+    #floating-zoom.zoom-landscape img { max-height: 25vh; }
 
     #phase-panel { width: 150px; max-width: 50vw; top: 6px; right: 6px; padding: 6px; }
     #phase-panel h3 { font-size: 0.8em; }
@@ -563,4 +569,5 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
 
     #floating-zoom { max-width: 92vw; }
     #floating-zoom img { max-height: 22vh; }
+    #floating-zoom.zoom-landscape img { max-height: 18vh; }
 }

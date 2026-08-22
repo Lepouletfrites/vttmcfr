@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "6.4"; // Ajustement: taille du zoom réduite à 80% (débordait sur la zone de main)
+const GAME_VERSION = "6.5"; // Ajustement: zoom paysage réduit à 65% (garde 80% pour le portrait)
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -2697,6 +2697,13 @@ function showZoom(imageUrl) {
         floatingZoom.classList.remove('hidden');
     }
 }
+
+// Une carte paysage occupe déjà toute la largeur disponible en restant lisible, donc son zoom
+// n'a pas besoin d'être aussi grand qu'un zoom portrait : on détecte l'orientation réelle de
+// l'image chargée (pas la carte source) pour rester correct même pour les images externes.
+zoomImg.addEventListener('load', () => {
+    floatingZoom.classList.toggle('zoom-landscape', zoomImg.naturalWidth > zoomImg.naturalHeight);
+});
 
 function hideZoom() {
     floatingZoom.classList.add('hidden');
