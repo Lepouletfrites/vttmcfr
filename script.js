@@ -1,5 +1,5 @@
 // --- VERSION DU JEU (Change ce numéro pour forcer le nettoyage du cache/localStorage chez les utilisateurs) ---
-const GAME_VERSION = "6.5"; // Ajustement: zoom paysage réduit à 65% (garde 80% pour le portrait)
+const GAME_VERSION = "6.6"; // Fix: la défausse du deck spécial héros (ex: Doctor Strange) n'avait jamais de position sur le plateau
 
 // --- DÉTECTION D'ENVIRONNEMENT ---
 const isWebBrowser = false;
@@ -775,16 +775,19 @@ async function setupHero(heroBaseCode, dbHeroId, secondaryDeckData = null) {
 
     if (secondaryDeckData) {
         heroSecDeck = [...secondaryDeckData];
-        heroSecCodes = [...secondaryDeckData]; 
+        heroSecCodes = [...secondaryDeckData];
         shuffleArray(heroSecDeck);
         let hd = document.getElementById('board-hero-deck');
         let hdd = document.getElementById('board-hero-discard');
         hd.classList.remove('hidden');
         hdd.classList.remove('hidden');
-        hd.style.left = (spawnX + 300) + "px"; 
-        hd.style.top = (spawnY) + "px";
+        // La défausse n'avait jamais de position assignée (seul le deck en recevait une, et deux
+        // fois de suite) : elle restait invisible/mal placée sur le plateau. Empilée sous le deck,
+        // comme pour les decks spéciaux de méchant (deployVillainSecDeck).
         hd.style.left = (spawnX + 440) + "px";
         hd.style.top = (spawnY) + "px";
+        hdd.style.left = (spawnX + 440) + "px";
+        hdd.style.top = (spawnY + 180) + "px";
     }
 
     if (btnAddNemesis && window.currentHeroNemesis.set.length > 0) {
