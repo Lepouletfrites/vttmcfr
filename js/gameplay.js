@@ -746,7 +746,7 @@ function flipCard(card) {
     const newSrc = willBeFlipped ? card.dataset.backUrl : card.dataset.frontUrl;
     card.querySelector('.card-front').src = newSrc;
 
-    showZoom(newSrc);
+    showZoom(newSrc, card);
 
     if (card.id === 'hero-card-element') heroHandSizeSpan.innerText = willBeFlipped ? card.dataset.handSizeB : card.dataset.handSizeA;
 

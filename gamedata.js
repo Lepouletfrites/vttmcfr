@@ -20,22 +20,26 @@ const MARVEL_DB = {
             deck: ['01010a', '01011', '01012', '01013', '01013', '01014', '01014', '01015', '01015', '01015', '01016', '01016', '01016', '01017', '01066', '01067', '01068', '01069', '01069', '01070', '01070', '01071', '01071', '01072', '01072', '01073', '01073', '01074', '01083', '01083', '01084', '01084', '01085', '01085', '01088', '01089', '01090', '01091', '01092', '01093', '01093']
         },
         {
+            // TODO: hero_code corrigé (01018a n'est pas une carte héros) : vérifier aussi « deck »
             id: "shehulk_core",
             name: "Miss Hulk - Agressivité (Cartes de base)",
-            hero_code: "01018a",
-            deck: ['01018a', '01019', '01020', '01020', '01021', '01021', '01022', '01022', '01022', '01023', '01023', '01024', '01024', '01025', '01026']
+            hero_code: "01019a",
+            deck: ["01018a", "01019", "01020", "01020", "01021", "01021", "01022", "01022", "01022", "01023", "01023", "01024", "01024", "01025", "01026"]
         },
         {
+            // TODO: hero_code corrigé (01027a n'est pas une carte héros) : vérifier aussi « deck »
+            // TODO: mise en place non automatisée : « Search your deck for a Black Panther upgrade and add it to your hand. Shuffle your deck. »
             id: "blackpanther_core",
             name: "Black Panther - Protection (Cartes de base)",
-            hero_code: "01027a",
-            deck: ['01027a', '01028', '01029', '01029', '01029', '01030', '01031', '01031', '01031', '01031', '01032', '01032', '01033', '01034', '01035']
+            hero_code: "01040a",
+            deck: ["01027a", "01028", "01029", "01029", "01029", "01030", "01031", "01031", "01031", "01031", "01032", "01032", "01033", "01034", "01035"]
         },
         {
+            // TODO: hero_code corrigé (01039a n'est pas une carte héros) : vérifier aussi « deck »
             id: "ironman_core",
             name: "Iron Man - Agressivité (Cartes de base)",
-            hero_code: "01039a",
-            deck: ['01039a', '01040', '01041', '01041', '01042', '01042', '01043', '01044', '01044', '01045', '01045', '01046', '01047', '01048', '01049']
+            hero_code: "01029a",
+            deck: ["01039a", "01040", "01041", "01041", "01042", "01042", "01043", "01044", "01044", "01045", "01045", "01046", "01047", "01048", "01049"]
         },
         {
             id: "doctor_strange",
@@ -46,48 +50,413 @@ const MARVEL_DB = {
         },
 
         // --- Nouveaux Héros (Prêts à être remplis) ---
-        { id: "captain_america", name: "Captain America", hero_code: "", deck: [] },
-        { id: "ms_marvel", name: "Ms. Marvel", hero_code: "", deck: [] },
-        { id: "thor", name: "Thor", hero_code: "", deck: [] },
+        {
+            id: "captain_america",
+            name: "Captain America",
+            hero_code: "03001a",
+            start_in_hand: ["03009"],
+            deck: []
+        },
+        {
+            id: "ms_marvel",
+            name: "Ms. Marvel",
+            hero_code: "05001a",
+            deck: []
+        },
+        {
+            id: "thor",
+            name: "Thor",
+            hero_code: "06001a",
+            deck: []
+        },
         { id: "black_widow", name: "Black Widow", hero_code: "08001a", deck: [] },
-        { id: "hulk", name: "Hulk", hero_code: "", deck: [] },
-        { id: "hawkeye", name: "Hawkeye", hero_code: "", deck: [] },
-        { id: "spider_woman", name: "Spider-Woman", hero_code: "", deck: [] },
-        { id: "ant_man", name: "Ant-Man", hero_code: "", deck: [] },
-        { id: "wasp", name: "La Guêpe (Wasp)", hero_code: "", deck: [] },
-        { id: "quicksilver", name: "Vif-Argent (Quicksilver)", hero_code: "", deck: [] },
-        { id: "scarlet_witch", name: "La Sorcière Rouge (Scarlet Witch)", hero_code: "", deck: [] },
-        { id: "venom", name: "Venom", hero_code: "", deck: [] },
-        { id: "spectrum", name: "Spectrum", hero_code: "", deck: [] },
-        { id: "adam_warlock", name: "Adam Warlock", hero_code: "", deck: [] },
-        { id: "nebula", name: "Nébula", hero_code: "", deck: [] },
-        { id: "war_machine", name: "War Machine", hero_code: "", deck: [] },
-        { id: "valkyrie", name: "Valkyrie", hero_code: "", deck: [] },
-        { id: "vision", name: "Vision", hero_code: "", deck: [] },
-        { id: "nova", name: "Nova", hero_code: "", deck: [] },
-        { id: "ironheart", name: "Ironheart", hero_code: "", deck: [] },
-        { id: "spider_ham", name: "Spider-Ham", hero_code: "", deck: [] },
-        { id: "spdr", name: "SP//dr", hero_code: "", deck: [] },
-        { id: "ghost_spider", name: "Ghost-Spider", hero_code: "", deck: [] },
-        { id: "miles_morales", name: "Miles Morales", hero_code: "", deck: [] },
+        {
+            id: "hulk",
+            name: "Hulk",
+            hero_code: "10001a",
+            deck: []
+        },
+        {
+            id: "hawkeye",
+            name: "Hawkeye",
+            hero_code: "04001a",
+            deck: []
+        },
+        {
+            id: "spider_woman",
+            name: "Spider-Woman",
+            hero_code: "04031a",
+            deck: []
+        },
+        {
+            id: "ant_man",
+            name: "Ant-Man",
+            hero_code: "12001a",
+            deck: []
+        },
+        {
+            id: "wasp",
+            name: "La Guêpe (Wasp)",
+            hero_code: "13001a",
+            deck: []
+        },
+        {
+            id: "quicksilver",
+            name: "Vif-Argent (Quicksilver)",
+            hero_code: "14001a",
+            deck: []
+        },
+        {
+            id: "scarlet_witch",
+            name: "La Sorcière Rouge (Scarlet Witch)",
+            hero_code: "15001a",
+            deck: []
+        },
+        {
+            // TODO: mise en place non automatisée : « Discard cards from the top of your deck until you discard a weapon upgrade, then add that card to your hand. »
+            id: "venom",
+            name: "Venom",
+            hero_code: "20001a",
+            deck: []
+        },
+        {
+            id: "spectrum",
+            name: "Spectrum",
+            hero_code: "21001a",
+            start_on_board: ["21002", "21003", "21004"],
+            deck: []
+        },
+        {
+            id: "adam_warlock",
+            name: "Adam Warlock",
+            hero_code: "21031a",
+            deck: []
+        },
+        {
+            id: "nebula",
+            name: "Nébula",
+            hero_code: "22001a",
+            deck: []
+        },
+        {
+            id: "war_machine",
+            name: "War Machine",
+            hero_code: "23001a",
+            deck: []
+        },
+        {
+            id: "valkyrie",
+            name: "Valkyrie",
+            hero_code: "25001a",
+            start_set_aside: ["25002"],
+            deck: []
+        },
+        {
+            // TODO: détail de mise en place à faire en jeu : « Put your mass form upgrade into play, Intangible side faceup. »
+            id: "vision",
+            name: "Vision",
+            hero_code: "26001a",
+            start_on_board: ["26002"],
+            deck: []
+        },
+        {
+            id: "nova",
+            name: "Nova",
+            hero_code: "28001a",
+            deck: []
+        },
+        {
+            id: "ironheart",
+            name: "Ironheart",
+            hero_code: "29001a",
+            deck: []
+        },
+        {
+            id: "spider_ham",
+            name: "Spider-Ham",
+            hero_code: "30001a",
+            deck: []
+        },
+        {
+            id: "spdr",
+            name: "SP//dr",
+            hero_code: "31001a",
+            deck: []
+        },
+        {
+            id: "ghost_spider",
+            name: "Ghost-Spider",
+            hero_code: "27001a",
+            deck: []
+        },
+        {
+            id: "miles_morales",
+            name: "Miles Morales",
+            hero_code: "27030a",
+            deck: []
+        },
         { id: "cyclops", name: "Cyclope", hero_code: "33001a", deck: [] },
-        { id: "phoenix", name: "Phénix", hero_code: "", deck: [] },
+        {
+            // TODO: détail de mise en place à faire en jeu : « Put your Phoenix Force upgrade into play, RESTRAINED side faceup. Place 4 power counters on it. »
+            id: "phoenix",
+            name: "Phénix",
+            hero_code: "34001a",
+            start_on_board: ["34002a"],
+            deck: []
+        },
         { id: "wolverine", name: "Wolverine", hero_code: "35001a", start_on_board: ["35002"], deck: [] },
-        { id: "storm", name: "Tornade (Storm)", hero_code: "", deck: [] },
-        { id: "gambit", name: "Gambit", hero_code: "", deck: [] },
-        { id: "rogue", name: "Maligne (Rogue)", hero_code: "", deck: [] },
-        { id: "cable", name: "Cable", hero_code: "", deck: [] },
-        { id: "domino", name: "Domino", hero_code: "", deck: [] },
-        { id: "psylocke", name: "Psylocke", hero_code: "", deck: [] },
-        { id: "angel", name: "Angel", hero_code: "", deck: [] },
-        { id: "x23", name: "X-23", hero_code: "", deck: [] },
-        { id: "deadpool", name: "Deadpool", hero_code: "", deck: [] },
-        { id: "bishop", name: "Bishop", hero_code: "", deck: [] },
-        { id: "magik", name: "Magik", hero_code: "", deck: [] },
+        {
+            // TODO: mise en place au choix : « Choose a support from the WEATHER deck and put it into play. » (à faire en jeu depuis le deck à part)
+            id: "storm",
+            name: "Tornade (Storm)",
+            hero_code: "36001a",
+            secondary_set_code: "storm_weather_deck",
+            deck: []
+        },
+        {
+            id: "gambit",
+            name: "Gambit",
+            hero_code: "37001a",
+            deck: []
+        },
+        {
+            id: "rogue",
+            name: "Maligne (Rogue)",
+            hero_code: "38001a",
+            start_set_aside: ["38002"],
+            deck: []
+        },
+        {
+            // TODO: mise en place non automatisée : « Search your deck and discard pile for a player side scheme and put it into play. (Shuffle.) »
+            id: "cable",
+            name: "Cable",
+            hero_code: "40001a",
+            deck: []
+        },
+        {
+            id: "domino",
+            name: "Domino",
+            hero_code: "40037a",
+            deck: []
+        },
+        {
+            // TODO: détail de mise en place à faire en jeu : « Put your 2 PSI-ENERGY upgrades into play, Psi-Knife side faceup. »
+            id: "psylocke",
+            name: "Psylocke",
+            hero_code: "41001a",
+            start_on_board: ["41002a", "41002a"],
+            deck: []
+        },
+        {
+            id: "angel",
+            name: "Angel",
+            hero_code: "42001a",
+            deck: []
+        },
+        {
+            id: "x23",
+            name: "X-23",
+            hero_code: "43001a",
+            start_on_board: ["43002"],
+            deck: []
+        },
+        {
+            id: "deadpool",
+            name: "Deadpool",
+            hero_code: "44001a",
+            deck: []
+        },
+        {
+            id: "bishop",
+            name: "Bishop",
+            hero_code: "45001a",
+            deck: []
+        },
+        {
+            id: "magik",
+            name: "Magik",
+            hero_code: "45030a",
+            deck: []
+        },
         { id: "iceman", name: "Iceberg (Iceman)", hero_code: "46001a", deck: [] ,start_on_board: ["46002","46002","46002","46002","46002","46002"] },
-        { id: "jubilee", name: "Jubilé", hero_code: "", deck: [] },
-        { id: "nightcrawler", name: "Diable Manquant (Nightcrawler)", hero_code: "", deck: [] },
-        { id: "magneto", name: "Magnéto", hero_code: "", deck: [] }
+        {
+            id: "jubilee",
+            name: "Jubilé",
+            hero_code: "47001a",
+            deck: []
+        },
+        {
+            id: "nightcrawler",
+            name: "Diable Manquant (Nightcrawler)",
+            hero_code: "48001a",
+            deck: []
+        },
+        {
+            id: "magneto",
+            name: "Magnéto",
+            hero_code: "49001a",
+            deck: []
+        },
+
+        // --- Ajoutés automatiquement par generate_heroes.py ---
+        {
+            // TODO: héros ajouté automatiquement
+            id: "groot",
+            name: "Groot (Convoitise Galactique)",
+            hero_code: "16001a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "rocket_raccoon",
+            name: "Rocket Raccoon (Convoitise Galactique)",
+            hero_code: "16029a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "gamora",
+            name: "Gamora (Gamora)",
+            hero_code: "18001a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "star_lord",
+            name: "Star-Lord (Star-Lord)",
+            hero_code: "17001a",
+            start_in_hand: ["17007"],
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "drax",
+            name: "Drax (Drax)",
+            hero_code: "19001a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "colossus",
+            name: "Colossus (La Genèse des Mutants)",
+            hero_code: "32001a",
+            start_in_hand: ["32006"],
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            // TODO: détail de mise en place à faire en jeu : « Put your mass form upgrade into play, Solid side faceup. »
+            id: "shadowcat",
+            name: "Shadowcat (La Genèse des Mutants)",
+            hero_code: "32030a",
+            start_on_board: ["32031a"],
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "maria_hill",
+            name: "Maria Hill (Agents of S.H.I.E.L.D.)",
+            hero_code: "50001a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            // TODO: détail de mise en place à faire en jeu : « Put your suit form upgrade into play, Assault side faceup. »
+            id: "nick_fury",
+            name: "Nick Fury (Agents of S.H.I.E.L.D.)",
+            hero_code: "50034a",
+            start_on_board: ["50035a"],
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "black_panther",
+            name: "Black Panther (Black Panther)",
+            hero_code: "51001a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "silk",
+            name: "Silk (Silk)",
+            hero_code: "52001a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "falcon",
+            name: "Falcon (Falcon)",
+            hero_code: "53001a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "winter_soldier",
+            name: "Winter Soldier (Winter Soldier)",
+            hero_code: "54001a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "tigra",
+            name: "Tigra (Civil War)",
+            hero_code: "56001a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "hulkling",
+            name: "Hulkling (Civil War)",
+            hero_code: "56029a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            // TODO: plusieurs decks à part (hercules_gift_deck, hercules_labor_deck) : un seul est géré (hercules_gift_deck)
+            id: "hercules",
+            name: "Hercules (Hercules)",
+            hero_code: "59001a",
+            secondary_set_code: "hercules_gift_deck",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "wonder_man",
+            name: "Wonder Man (Wonder Man)",
+            hero_code: "58001a",
+            start_on_board: ["58002"],
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "daredevil",
+            name: "Daredevil (Fear No Evil)",
+            hero_code: "60001a",
+            secondary_set_code: "daredevil_sense_deck",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "echo",
+            name: "Echo (Fear No Evil)",
+            hero_code: "60037a",
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "jessica_jones",
+            name: "Jessica Jones (Jessica Jones)",
+            hero_code: "61001a",
+            start_on_board: ["61002"],
+            deck: []
+        },
+        {
+            // TODO: héros ajouté automatiquement
+            id: "luke_cage",
+            name: "Luke Cage (Luke Cage)",
+            hero_code: "62001a",
+            deck: []
+        }
     ],
 
     // --- SCÉNARIOS DES MÉCHANTS ---

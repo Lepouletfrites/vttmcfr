@@ -120,7 +120,7 @@ function makeDraggable(element) {
         } else {
             // Un simple clic/tap sans glisser = sélection de la carte : affiche l'aperçu zoom.
             const isFlipped = element.dataset.flipped === 'true';
-            showZoom(isFlipped ? element.dataset.backUrl : element.dataset.frontUrl);
+            showZoom(isFlipped ? element.dataset.backUrl : element.dataset.frontUrl, element);
         }
     }
 }
@@ -504,9 +504,30 @@ function getPinchDistance(touches) {
 }
 
 
-function showZoom(imageUrl) {
+// anchorEl (optionnel) : la carte cliquée. L'aperçu s'affiche du côté opposé de l'écran pour
+// ne jamais la recouvrir (une carte tout à gauche ouvrait l'aperçu… par-dessus elle-même).
+function showZoom(imageUrl, anchorEl = null) {
     if (imageUrl) {
         zoomImg.src = imageUrl;
+        let right = false;
+        if (anchorEl && anchorEl.getBoundingClientRect) {
+            const r = anchorEl.getBoundingClientRect();
+            right = r.left + r.width / 2 < window.innerWidth / 2;
+        }
+        floatingZoom.classList.toggle('zoom-right', right);
+        floatingZoom.style.top = '';
+        zoomImg.style.maxHeight = '';
+        if (right) {
+            // À droite : on se place sous le panneau des phases, sans déborder sur la barre du bas.
+            const phasePanel = document.getElementById('phase-panel');
+            const hud = document.getElementById('bottom-hud');
+            const top = phasePanel ? phasePanel.getBoundingClientRect().bottom + 10 : 80;
+            const bottom = hud ? hud.getBoundingClientRect().top - 10 : window.innerHeight - 10;
+            if (bottom - top >= 220) {
+                floatingZoom.style.top = top + 'px';
+                zoomImg.style.maxHeight = (bottom - top) + 'px';
+            }
+        }
         floatingZoom.classList.remove('hidden');
     }
 }

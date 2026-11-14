@@ -130,6 +130,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow
     transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
 }
 #floating-zoom:hover { transform: translateY(-2px); }
+/* Carte cliquée sur la moitié gauche : l'aperçu passe à droite pour ne pas la recouvrir
+   (sous le panneau des phases, qui reste visible en haut à droite). */
+#floating-zoom.zoom-right { left: auto; right: 20px; }
+/* Sur le plateau, l'aperçu laisse passer les clics : une carte située dessous reste cliquable
+   (le clic ouvre son propre aperçu ; un clic sur le plateau vide ferme l'aperçu).
+   Quand une fenêtre (inspection de pile…) est ouverte, il redevient cliquable pour se fermer. */
+body:not(:has(.modal:not(.hidden))) #floating-zoom { pointer-events: none; }
 #floating-zoom img {
     display: block;
     width: auto;

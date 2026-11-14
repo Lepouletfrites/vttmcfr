@@ -355,7 +355,20 @@ async function setupHero(heroBaseCode, dbHeroId, secondaryDeckData = null) {
                 }
             }
         }
-    } // <--- C'était cette accolade fermante en trop qui coupait la fonction !
+        // « Setup : mettez X de côté » (ex. Valkyrie, Malicia) : retirée de la pioche, rangée dans « De Côté »
+        if (heroDef && heroDef.start_set_aside) {
+            for (let code of heroDef.start_set_aside) {
+                let idx = myDeck.indexOf(code);
+                if (idx !== -1) myDeck.splice(idx, 1);
+                setAsideCards.push(code);
+            }
+        }
+    }
+
+    // Cartes à prendre en main pendant la mise en place (ex. bouclier de Captain America) :
+    // cherchées dans la pioche APRÈS la main de départ, comme la capacité « Setup » du héros.
+    const heroDefForHand = currentHeroId && MARVEL_DB.heroes.find(h => h.id === currentHeroId);
+    const startInHand = (heroDefForHand && heroDefForHand.start_in_hand) || [];
 
     if (secondaryDeckData) {
         heroSecDeck = [...secondaryDeckData];
@@ -383,6 +396,17 @@ async function setupHero(heroBaseCode, dbHeroId, secondaryDeckData = null) {
     updateDeckCounters();
 
     await drawToHandSize();
+
+    for (const code of startInHand) {
+        // Déjà piochée dans la main de départ ? Rien à faire.
+        if ([...handArea.querySelectorAll('.card')].some(c => c.dataset.code === code)) continue;
+        const idx = myDeck.indexOf(code);
+        if (idx === -1) continue; // pas dans ce deck
+        myDeck.splice(idx, 1);
+        const cardData = await fetchAPI(code);
+        if (cardData) putInHand(buildCardDOM(cardData));
+    }
+    if (startInHand.length) { shuffleArray(myDeck); updateDeckCounters(); }
 }
 
 if (btnAddNemesis) {
