@@ -41,8 +41,10 @@ body {
     color: var(--text-primary);
     overflow: hidden;
     display: flex;
-    height: 100vh;
-    height: 100dvh;
+    /* Collé aux 4 bords de la fenêtre plutôt que 100vh : en PWA iOS (barre d'état translucide),
+       100vh/100dvh ne correspond pas à la zone visible et le bas (main, pioches) était coupé. */
+    position: fixed; inset: 0;
+    height: auto;
     background: var(--bg-app);
     -webkit-font-smoothing: antialiased;
 }
@@ -58,7 +60,13 @@ body {
 #modal-cards-container { touch-action: pan-y; }
 
 /* La zone de jeu prend 100% de l'écran */
-#main-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; width: 100%; }
+#main-area { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; width: 100%; min-height: 0;
+    /* En PWA (plein écran), garder la barre du bas et le haut hors des zones système (barre d'accueil, encoche). */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+}
 
 /* ==========================================
    BARRE SUPÉRIEURE
@@ -212,7 +220,7 @@ body:not(:has(.modal:not(.hidden))) #floating-zoom { pointer-events: none; }
 /* ==========================================
    PLATEAU DE JEU
    ========================================== */
-#board-wrapper { flex: 1; overflow: hidden; background-color: var(--bg-board); position: relative; cursor: grab; pointer-events: auto; }
+#board-wrapper { flex: 1; min-height: 0; overflow: hidden; background-color: var(--bg-board); position: relative; cursor: grab; pointer-events: auto; }
 #board-wrapper:active { cursor: grabbing; }
 #game-board {
     position: absolute; width: 4000px; height: 4000px;
@@ -263,6 +271,7 @@ body:not(:has(.modal:not(.hidden))) #floating-zoom { pointer-events: none; }
     background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-app) 100%);
     border-top: 1px solid var(--border-soft);
     display: flex; z-index: 50; box-shadow: 0 -8px 24px rgba(0,0,0,0.4); min-width: 0;
+    flex-shrink: 0; /* sinon le HUD se fait écraser (main et pioches coupées) quand la fenêtre est plus basse */
 }
 .deck-area { width: 90px; display: flex; justify-content: center; align-items: center; padding: 5px; flex-shrink: 0; }
 

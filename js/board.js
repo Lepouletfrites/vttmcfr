@@ -298,7 +298,15 @@ function returnCardToDeck(position) {
     if (!targetCard) return;
     const code = targetCard.dataset.code;
     const isEncounter = targetCard.dataset.faction === 'encounter' || targetCard.dataset.faction === 'villain';
-    const pile = isEncounter ? encounterDeck : myDeck;
+    // Une carte d'un deck à part (Sens de Daredevil, Invocations de Strange, decks spéciaux
+    // de méchant…) retourne dans SON deck, pas dans la pioche principale — même règle que la défausse.
+    let pile = isEncounter ? encounterDeck : myDeck;
+    if (heroSecCodes.includes(code)) pile = heroSecDeck;
+    else {
+        for (let i = 0; i < 3; i++) {
+            if (villainSecCodes[i] && villainSecCodes[i].includes(code)) { pile = villainSecDecks[i]; break; }
+        }
+    }
     targetCard.remove();
     if (position === 'top') pile.push(code);
     else if (position === 'bottom') pile.unshift(code);
@@ -516,16 +524,26 @@ function showZoom(imageUrl, anchorEl = null) {
         }
         floatingZoom.classList.toggle('zoom-right', right);
         floatingZoom.style.top = '';
+        floatingZoom.style.right = '';
         zoomImg.style.maxHeight = '';
         if (right) {
-            // À droite : on se place sous le panneau des phases, sans déborder sur la barre du bas.
+            // À droite : on se met À CÔTÉ du panneau des phases (même taille que l'aperçu de gauche),
+            // plutôt qu'en dessous où il restait trop peu de hauteur et la carte était minuscule.
             const phasePanel = document.getElementById('phase-panel');
-            const hud = document.getElementById('bottom-hud');
-            const top = phasePanel ? phasePanel.getBoundingClientRect().bottom + 10 : 80;
-            const bottom = hud ? hud.getBoundingClientRect().top - 10 : window.innerHeight - 10;
-            if (bottom - top >= 220) {
-                floatingZoom.style.top = top + 'px';
-                zoomImg.style.maxHeight = (bottom - top) + 'px';
+            const pr = phasePanel && !phasePanel.classList.contains('hidden') ? phasePanel.getBoundingClientRect() : null;
+            if (pr && pr.width > 0) {
+                // Sous l'écran étroit, pas la place à côté : on reste collé au bord droit, sous le panneau.
+                if (pr.left > window.innerWidth * 0.6) {
+                    floatingZoom.style.right = (window.innerWidth - pr.left + 10) + 'px';
+                } else {
+                    const hud = document.getElementById('bottom-hud');
+                    const top = pr.bottom + 10;
+                    const bottom = hud ? hud.getBoundingClientRect().top - 10 : window.innerHeight - 10;
+                    if (bottom - top >= 220) {
+                        floatingZoom.style.top = top + 'px';
+                        zoomImg.style.maxHeight = (bottom - top) + 'px';
+                    }
+                }
             }
         }
         floatingZoom.classList.remove('hidden');
