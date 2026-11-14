@@ -121,8 +121,26 @@ const MARVEL_DB = {
        
 
         // --- Nouveaux Méchants (Avec card_set_code complétés) ---
-        { id: "green_goblin_risky_business", name: "Le Bouffon Vert - Business en Risque", card_set_code: "risky_business", stages: [], schemes: [], default_modulars: ["goblin_gimmicks"] },
-        { id: "green_goblin_mutagen_formula", name: "Le Bouffon Vert - Formule Mutagène", card_set_code: "mutagen_formula", stages: [], schemes: [], default_modulars: ["goblin_gimmicks"] },
+        {
+            // Mise en place : mettez en jeu l'environnement Entreprise Criminelle. Mélangez le deck Rencontre. Avancez au stade 1B.
+            id: "green_goblin_risky_business",
+            name: "Le Bouffon Vert - Business en Risque",
+            card_set_code: "risky_business",
+            stages: ["02001a", "02002a", "02003a"],
+            schemes: ["02004", "02005"],
+            default_modulars: ["goblin_gimmicks"],
+            start_on_board: ["02006a"]
+        },
+        {
+            // Mise en place : mettez en jeu un sbire Esclave Bouffon engagé avec chaque joueur. Mélangez le deck Rencontre. Avancez au stade 1B.
+            id: "green_goblin_mutagen_formula",
+            name: "Le Bouffon Vert - Formule Mutagène",
+            card_set_code: "mutagen_formula",
+            stages: ["02014", "02015", "02016"],
+            schemes: ["02017", "02018"],
+            default_modulars: ["goblin_gimmicks"],
+            start_on_board: ["02024"]
+        },
         { 
             id: "wrecking_crew", 
             name: "Les Démolisseurs",
@@ -187,7 +205,17 @@ const MARVEL_DB = {
             start_set_aside: ["04130"]
         
         },
-        { id: "kang", name: "Kang le Conquérant", card_set_code: "kang", stages: [], schemes: [], default_modulars: ["temporal"] },
+        {
+            // TODO: plusieurs cartes méchant au même stade (variantes) : à trier à la main
+            // TODO: cartes de mise en place non retrouvées : Kang
+            id: "kang",
+            name: "Kang le Conquérant",
+            card_set_code: "kang",
+            stages: ["11001", "11002", "11003", "11004", "11005", "11006"],
+            schemes: ["11007", "11008", "11009", "11010", "11011", "11012", "11013"],
+            default_modulars: ["temporal"],
+            start_set_aside: ["11023"]
+        },
         { 
             id: "drang",
             name: "Drang de la Confrérie Badoon",
@@ -202,12 +230,32 @@ const MARVEL_DB = {
             default_modulars: ["band_of_badoon"],
             start_on_board: ["16063","16142"]
         },
-        { id: "collector_infiltrate", name: "Le Collectionneur - Infiltration du Musée", card_set_code: "infiltrate_the_museum", stages: [], schemes: [], default_modulars: ["galactic_artifacts"] },
-        { id: "collector_escape", name: "Le Collectionneur - Fuite du Musée", card_set_code: "escape_the_museum", stages: [], schemes: [], default_modulars: ["galactic_artifacts"] },
+        {
+            // Mise en place : créer l'aire de jeu appelée "La Collection" (voir le livret pour plus de détails). Mettez la carte du dessus du deck de chaque joueur dans La Collection, face visible.
+            // TODO: étapes de mise en place spéciales (défausser, retirer, jetons…) non automatisées
+            id: "collector_infiltrate",
+            name: "Le Collectionneur - Infiltration du Musée",
+            card_set_code: "infiltrate_the_museum",
+            stages: ["16070", "16071", "16072"],
+            schemes: ["16073a"],
+            mandatory_modulars: ["galactic_artifacts"],
+            default_modulars: ["menagerie_medley"]
+        },
+        {
+            // Mise en place : mettez en jeu l'environnement Labyrinthe de Rayonnages. Mettez de côté le set de rencontre Contrôles du Vaisseau.
+            id: "collector_escape",
+            name: "Le Collectionneur - Fuite du Musée",
+            card_set_code: "escape_the_museum",
+            stages: ["16080a", "16081a"],
+            schemes: ["16082a", "16083a", "16084a"],
+            mandatory_modulars: ["galactic_artifacts", "ship_command"],
+            default_modulars: ["menagerie_medley"],
+            start_on_board: ["16085a"]
+        },
         { 
             id: "nebula_villain",
             name: "Nébula (Méchante)",
-            card_set_code: "nebula_villain",
+            card_set_code: "nebula",
             stages: ["16088","16089","16090"],
             schemes: ["16091a","16092a"],
             mandatory_modulars: ["power_stone","ship_command"],
@@ -274,7 +322,16 @@ const MARVEL_DB = {
             default_modulars: ["enchantress","frost_giants"],
             start_on_board: ["21167"]
         },
-        { id: "the_hood", name: "Le Capuchon (The Hood)", card_set_code: "the_hood", stages: [], schemes: [], default_modulars: ["streets_of_mayhem"] },
+        {
+            // Mise en place : choisissez 7 sets de rencontre modulaires et mettez-les de côté (vous pouvez les prendre au hasard). Sélectionnez aléatoirement 1 de ces sets, puis mélangez-le dans le deck Rencontre.
+            // TODO: mise en place avec choix de modulaires (au hasard / au choix) : à vérifier
+            id: "the_hood",
+            name: "Le Capuchon (The Hood)",
+            card_set_code: "the_hood",
+            stages: ["24001", "24002", "24003"],
+            schemes: ["24004", "24005", "24006"],
+            default_modulars: ["streets_of_mayhem"]
+        },
         {
              id: "sandman",
              name: "L'Homme-Sable",
@@ -288,7 +345,7 @@ const MARVEL_DB = {
         { 
             id: "venom_villain",
             name: "Venom (Méchant)",
-            card_set_code: "venom_villain",
+            card_set_code: "venom",
             stages: ["27073","27074","27075"],
             schemes: ["27076a"],
             mandatory_modulars: ["symbiotic_strength"],
@@ -305,7 +362,26 @@ const MARVEL_DB = {
             default_modulars: ["whispers_of_paranoia"],
             start_on_board: ["27091"]
         },
-        { id: "sinister_six", name: "Les Six Sinistres", card_set_code: "sinister_six", stages: [], schemes: [], default_modulars: ["guerilla_tactics"] },
+        {
+            // Mise en place : prenez X méchants au hasard, X étant le nombre de joueurs plus 1. Mettez en jeu ces méchants, placez le jeton Actif sur le machant avec l'ordre d'activation le moins élevé et mettez de côté les autres méchants. Mettez en jeu la manigance annexe Lumière au Bout du Tunnel, face PIÈGE ! visible
+            // TODO: scénario à plusieurs méchants : vérifier multi_villains et le placement du jeton
+            // TODO: mise en place avec choix de modulaires (au hasard / au choix) : à vérifier
+            id: "sinister_six",
+            name: "Les Six Sinistres",
+            card_set_code: "sinister_six",
+            multi_villains: [
+                { id: "doctor_octopus", name: "Docteur Octopus", stages: ["27094"] },
+                { id: "electro", name: "Electro", stages: ["27095"] },
+                { id: "hobgoblin", name: "Le Super Bouffon", stages: ["27096"] },
+                { id: "kraven_the_hunter", name: "Kraven le Chasseur", stages: ["27097"] },
+                { id: "scorpion", name: "Scorpion", stages: ["27098"] },
+                { id: "vulture", name: "Le Vautour", stages: ["27099"] }
+            ],
+            schemes: ["27100", "27101a"],
+            default_modulars: ["guerilla_tactics"],
+            start_on_board: ["27102a"],
+            jeton: true
+        },
         {
             id: "venom_goblin",
             name: "Venom-Bouffon",
@@ -329,7 +405,7 @@ const MARVEL_DB = {
         {
             id: "sentinel", 
             name: "Sentinelle", 
-            card_set_code: "sentinel", 
+            card_set_code: "project_wideawake", 
             stages: ["32084","32085","32086"], 
             schemes: ["32087"],
             mandatory_modulars: ["zero_tolerance"], 
@@ -347,7 +423,18 @@ const MARVEL_DB = {
             default_modulars: ["zero_tolerance"],
             start_on_board: ["32172b"] 
         },
-        { id: "mansion_attack", name: "Attaque de l'Institut", card_set_code: "mansion_attack", stages: [], schemes: [], default_modulars: ["brotherhood"] },
+        {
+            // Mise en place : mettez en jeu l'environnement Sauver l'École. Mélangez tous les exemplaires de la manigance principale 2A et empilez-les, sous La Confrérie Attaque ! Mélangez les méchants ensemble (sans regarder) pour créer le deck Méchant. La carte du dessus de ce deck en jeu.
+            // TODO: plusieurs cartes méchant au même stade (variantes) : à trier à la main
+            id: "mansion_attack",
+            name: "Attaque de l'Institut",
+            card_set_code: "mansion_attack",
+            stages: ["32121a", "32122a", "32123a", "32124a"],
+            schemes: ["32125", "32126", "32127", "32128", "32129"],
+            mandatory_modulars: ["brotherhood"],
+            default_modulars: ["mystique"],
+            start_on_board: ["32130"]
+        },
         { 
             id: "magneto_villain", 
             name: "Magnéto (Méchant)", 
@@ -358,19 +445,240 @@ const MARVEL_DB = {
             start_on_board: ["32144a"],
             start_set_aside: ["32145a"]  
         },
-        { id: "magog", name: "Magog", card_set_code: "magog", stages: [], schemes: [], default_modulars: ["crime"] },
-        { id: "spiral", name: "Spirale", card_set_code: "spiral", stages: [], schemes: [], default_modulars: ["fantasy"] },
-        { id: "mojo", name: "Mojo", card_set_code: "mojo", stages: [], schemes: [], default_modulars: ["sitcom"] },
-        { id: "morlock_siege", name: "Siège des Morlocks", card_set_code: "morlock_siege", stages: [], schemes: [], default_modulars: ["mutant_peacemakers"] },
-        { id: "on_the_run", name: "En Fuite", card_set_code: "on_the_run", stages: [], schemes: [], default_modulars: ["mutant_provocateurs"] },
-        { id: "juggernaut", name: "Le Fléau (Juggernaut)", card_set_code: "juggernaut", stages: [], schemes: [], default_modulars: ["nasty_boys"] },
-        { id: "mister_sinister", name: "Monsieur Sinistre", card_set_code: "mister_sinister", stages: [], schemes: [], default_modulars: ["reavers"] },
-        { id: "stryfe", name: "Stryfe", card_set_code: "stryfe", stages: [], schemes: [], default_modulars: ["zero_tolerance"] },
-        { id: "unus", name: "Unus l'Intouchable", card_set_code: "unus", stages: [], schemes: [], default_modulars: ["infinites"] },
-        { id: "four_horsemen", name: "Les Quatre Cavaliers", card_set_code: "four_horsemen", stages: [], schemes: [], default_modulars: ["clan_akkaba"] },
-        { id: "apocalypse", name: "Apocalypse", card_set_code: "apocalypse", stages: [], schemes: [], default_modulars: ["prelates"] },
+        {
+            // Mise en place : placez en jeu l'environnement Le Champion et l'environnement Les Challengeurs, avec leur face FOULE MÉCONTENTE visible.
+            // TODO: modulaire recommandé non reconnu : « 1 set modulaire pris au hasard dans le Paquet Scénario MojoMania »
+            // TODO: mise en place avec choix de modulaires (au hasard / au choix) : à vérifier
+            id: "magog",
+            name: "Magog",
+            card_set_code: "magog",
+            stages: ["39001a"],
+            schemes: ["39002a"],
+            default_modulars: ["crime"],
+            start_on_board: ["39003a", "39004a"]
+        },
+        {
+            // Mise en place : mettez en jeu la manigance annexe À La Recherche de Spirale et 1 environnement SPECTACLE pris au hasard. Mélangez tous les autres environnements SPECTACLE avec la traîtrise Acculée ! pour constituer le deck Spectacle. (Voir livret de règles, p. 11.) Placez Spirale, face EN FUITE visible.
+            // TODO: mise en place avec choix de modulaires (au hasard / au choix) : à vérifier
+            // TODO: cartes de mise en place non retrouvées : 1 random SHOW
+            // TODO: étapes de mise en place spéciales (défausser, retirer, jetons…) non automatisées
+            id: "spiral",
+            name: "Spirale",
+            card_set_code: "spiral",
+            stages: ["39012a", "39013a", "39014a"],
+            schemes: ["39015a"],
+            default_modulars: ["fantasy"],
+            start_on_board: ["39016"]
+        },
+        {
+            // Mise en place : choisissez 1 set modulaire, plus 1[per_hero] set modulaire supplémentaire, du Paquet Scénario MojoMania et mettez-les de côté. Mettez en jeu l'environnement La Roue Des Genres, face EN ROTATION visible.
+            // TODO: mise en place avec choix de modulaires (au hasard / au choix) : à vérifier
+            id: "mojo",
+            name: "Mojo",
+            card_set_code: "mojo",
+            stages: ["39022", "39023", "39024"],
+            schemes: ["39025a"],
+            default_modulars: ["sitcom"],
+            start_on_board: ["39026a"]
+        },
+        {
+            // Mise en place : mettez en jeu l'environnement Mis Hors d'État de Nuire. Mettez de côté la traîtrise Cachez-Vous! et chaque allié Morlock. Mélangez ensemble les méchants (sans regarder) pour créer le deck Méchant. La cartge du dessus de ce deck est en jeu.
+            // TODO: aucune carte méchant dans ce set (méchant dans un autre set / deck de méchants ?)
+            id: "morlock_siege",
+            name: "Siège des Morlocks",
+            card_set_code: "morlock_siege",
+            stages: [],
+            schemes: ["40077", "40078"],
+            default_modulars: ["military_grade", "mutant_slayers"],
+            start_on_board: ["40081a"],
+            start_set_aside: ["40080", "40079"]
+        },
+        {
+            // Mise en place : mettez en jeu 1 méchant MARAUDER pris au hasard. Retirez de la partie le sbire ayant le même titre que le méchant ainsi que tous les autres méchants. Attachez l'attachement Le Ravisseur de Hope au méchant, face CONFIANT visible.
+            // TODO: aucune carte méchant dans ce set (méchant dans un autre set / deck de méchants ?)
+            // TODO: mise en place avec choix de modulaires (au hasard / au choix) : à vérifier
+            // TODO: cartes de mise en place non retrouvées : 1 random MARAUDER villain
+            // TODO: étapes de mise en place spéciales (défausser, retirer, jetons…) non automatisées
+            id: "on_the_run",
+            name: "En Fuite",
+            card_set_code: "on_the_run",
+            stages: [],
+            schemes: ["40103", "40104"],
+            mandatory_modulars: ["mutant_slayers"],
+            default_modulars: ["military_grade", "nasty_boys"],
+            start_on_board: ["40105a"]
+        },
+        {
+            // Mise en place : attachez le Casque du Fléau. Mettez en Jeu Hope Summers sous le contrôle du premier joueur.
+            id: "juggernaut",
+            name: "Le Fléau (Juggernaut)",
+            card_set_code: "juggernaut",
+            stages: ["40118", "40119", "40120"],
+            schemes: ["40121"],
+            mandatory_modulars: ["hope_summers"],
+            default_modulars: ["black_tom_cassidy"],
+            start_on_board: ["40122a", "40130"]
+        },
+        {
+            // Mise en place : mettez de côté les sets de Rencontre Vol, Super Force et Télépathie. Mettez en jeu Hope Summers sous le contrôle du premier joueur.
+            id: "mister_sinister",
+            name: "Monsieur Sinistre",
+            card_set_code: "mister_sinister",
+            stages: ["40136", "40137", "40138"],
+            schemes: ["40139", "40140", "40141", "40142", "40143"],
+            mandatory_modulars: ["flight", "super_strength", "telepathy", "hope_summers"],
+            default_modulars: ["nasty_boys"],
+            start_on_board: ["40130"]
+        },
+        {
+            id: "stryfe",
+            name: "Stryfe",
+            card_set_code: "stryfe",
+            stages: ["40163", "40164", "40165"],
+            schemes: ["40166", "40167"],
+            default_modulars: ["zero_tolerance"],
+            start_on_board: ["40130", "40168a"]
+        },
+        {
+            // Mise en place : révélez la manigance annexe Réserve de Gènes. En mode expert, attribuez à chaque joueur une carte Rencontre face cachée.
+            id: "unus",
+            name: "Unus l'Intouchable",
+            card_set_code: "unus",
+            stages: ["45059", "45060", "45061"],
+            schemes: ["45062"],
+            mandatory_modulars: ["infinites"],
+            default_modulars: ["dystopian_nightmare"],
+            start_on_board: ["45071"]
+        },
+        {
+            // Mise en place : mélangez les quatre méchants CAVALIERS, puis révélez-les les uns après les autres, en les alignant de gauche à droite. Placez le jeton Actif sur le méchant le plus à gauche (voir livret de règles). Chaque joueur révèle une manigance annexe prise au hasard dans le set de rencontre Quatre Cavaliers.
+            // TODO: plusieurs cartes méchant au même stade (variantes) : à trier à la main
+            // TODO: mise en place avec choix de modulaires (au hasard / au choix) : à vérifier
+            id: "four_horsemen",
+            name: "Les Quatre Cavaliers",
+            card_set_code: "four_horsemen",
+            stages: ["45081a", "45082a", "45083a", "45084a"],
+            schemes: ["45085"],
+            default_modulars: ["dystopian_nightmare", "hounds"]
+        },
+        {
+            // Mise en place : mettez de côté chaque carte Méchant inutilisée, chaque sbire PRÉLAT et la manigance annexe Le Trône du Tyran. Révélez la manigance annexe Cœur de l'Empire. Le premier joueur révèle aléatoirement un sbire PRÉLAT mis de côté.
+            id: "apocalypse",
+            name: "Apocalypse",
+            card_set_code: "apocalypse",
+            stages: ["45101a", "45102a"],
+            schemes: ["45103"],
+            default_modulars: ["dark_riders", "infinites"],
+            start_on_board: ["45104a"]
+        },
         { id: "dark_phoenix", name: "Phénix Noir", card_set_code: "dark_phoenix", stages: [], schemes: [], default_modulars: [] },
-        { id: "en_sabah_nur", name: "En Sabah Nur", card_set_code: "en_sabah_nur", stages: [], schemes: [], default_modulars: [] }
+        {
+            // Mise en place : Apocalypse commence la partie sous forme BIOMORPHE. Attribuez à chaque joueur une carte Rencontre face cachée.
+            id: "en_sabah_nur",
+            name: "En Sabah Nur",
+            card_set_code: "en_sabah_nur",
+            stages: ["45184a", "45185a", "45186a"],
+            schemes: ["45147", "45148"],
+            default_modulars: ["celestial_tech", "clan_akkaba"]
+        },
+
+        // --- Ajoutés automatiquement par generate_villains.py ---
+        {
+            // Mise en place : mettez de côté les sets Lune Bleue, Génosha et Terre Sauvage (y compris chaque carte Environnement de ces sets). En mode expert, révélez l'attachement Lunettes High-Tech.
+            // TODO: scénario ajouté automatiquement : vérifier le nom et la mise en place
+            // TODO: cartes de mise en place non retrouvées : Blue Moon, Savage Land sets
+            id: "dark_beast",
+            name: "Le Fauve Noir (L'Ère d'Apocalypse)",
+            card_set_code: "dark_beast",
+            stages: ["45118", "45119", "45120"],
+            schemes: ["45121"],
+            default_modulars: ["dystopian_nightmare"],
+            start_on_board: ["45122"],
+            start_set_aside: ["45133"]
+        },
+        {
+            // TODO: scénario ajouté automatiquement : vérifier le nom et la mise en place
+            id: "black_widow_villain",
+            name: "Black Widow (Agents of S.H.I.E.L.D.)",
+            card_set_code: "black_widow_villain",
+            stages: ["50064", "50065", "50066"],
+            schemes: ["50067a"],
+            default_modulars: []
+        },
+        {
+            // TODO: scénario ajouté automatiquement : vérifier le nom et la mise en place
+            id: "batroc",
+            name: "Batroc (Agents of S.H.I.E.L.D.)",
+            card_set_code: "batroc",
+            stages: ["50086a"],
+            schemes: ["50087a", "50088a", "50089a"],
+            default_modulars: [],
+            start_on_board: ["50090a"],
+            start_set_aside: ["50091"]
+        },
+        {
+            // TODO: scénario ajouté automatiquement : vérifier le nom et la mise en place
+            // TODO: cartes de mise en place non retrouvées : 1 random Adaptoid, others
+            // TODO: étapes de mise en place spéciales (défausser, retirer, jetons…) non automatisées
+            id: "m.o.d.o.k.",
+            name: "M.O.D.O.K (Agents of S.H.I.E.L.D.)",
+            card_set_code: "m.o.d.o.k.",
+            stages: ["50103a"],
+            schemes: ["50104a"],
+            default_modulars: [],
+            start_on_board: ["50113"]
+        },
+        {
+            // TODO: scénario ajouté automatiquement : vérifier le nom et la mise en place
+            // TODO: mise en place avec choix de modulaires (au hasard / au choix) : à vérifier
+            // TODO: cartes de mise en place non retrouvées : of those, Justice, Like Lightning
+            id: "thunderbolts",
+            name: "Thunderbolts (Agents of S.H.I.E.L.D.)",
+            card_set_code: "thunderbolts",
+            stages: ["50129a"],
+            schemes: ["50130a"],
+            default_modulars: []
+        },
+        {
+            // TODO: scénario ajouté automatiquement : vérifier le nom et la mise en place
+            // TODO: cartes de mise en place non retrouvées : Board Member
+            id: "baron_zemo",
+            name: "Baron Zemo (Agents of S.H.I.E.L.D.)",
+            card_set_code: "baron_zemo",
+            stages: ["50165a", "50166a"],
+            schemes: ["50167a", "50168a", "50169a"],
+            default_modulars: []
+        },
+        {
+            // TODO: scénario ajouté automatiquement : vérifier le nom et la mise en place
+            // TODO: cartes de mise en place non retrouvées : random Hypnotic Gaze, remaining Hypnotic Gaze
+            id: "enchantress_villain",
+            name: "Enchantress (Trickster Takeover)",
+            card_set_code: "enchantress_villain",
+            stages: ["55001", "55002", "55003"],
+            schemes: ["55004a", "55005a"],
+            default_modulars: [],
+            start_set_aside: ["55006"]
+        },
+        {
+            // TODO: scénario ajouté automatiquement : vérifier le nom et la mise en place
+            // TODO: étapes de mise en place spéciales (défausser, retirer, jetons…) non automatisées
+            id: "god_of_lies",
+            name: "God of Lies (Trickster Takeover)",
+            card_set_code: "god_of_lies",
+            stages: ["55027a", "55029a", "55030a", "55031a", "55032a"],
+            schemes: ["55028a", "55033a"],
+            default_modulars: []
+        },
+        {
+            // TODO: scénario ajouté automatiquement : vérifier le nom et la mise en place
+            id: "kingpin",
+            name: "Kingpin (Fear No Evil)",
+            card_set_code: "kingpin",
+            stages: ["60159a", "60160a"],
+            schemes: ["60161a", "60162a"],
+            default_modulars: []
+        }
     ],
 
     // --- SETS MODULAIRES ---
@@ -380,7 +688,7 @@ const MARVEL_DB = {
         { id: "masters_of_evil", name: "Les Maîtres du Mal", card_set_code: "masters_of_evil" },
         { id: "under_attack", name: "En Pleine Attaque", card_set_code: "under_attack" },
         { id: "legions_of_hydra", name: "Légions de l'Hydra", card_set_code: "legions_of_hydra" },
-        { id: "doomsday_chair", name: "Le Siège de l'Apocalypse", card_set_code: "doomsday_chair" },
+        { id: "doomsday_chair", name: "Le Siège de l'Apocalypse", card_set_code: "the_doomsday_chair" },
         
 
         // --- Nouveaux Sets Modulaires (Avec card_set_code complétés) ---
@@ -400,7 +708,7 @@ const MARVEL_DB = {
         // Kang
         { id: "temporal", name: "Temporel", card_set_code: "temporal" },
         { id: "anachronauts", name: "Anachronautes", card_set_code: "anachronauts" },
-        { id: "master_of_time", name: "Maître du Temps", card_set_code: "master_of_time" },
+        { id: "master_of_time", name: "Maître du Temps", card_set_code: "mot" },
 
         // Convoitise Galactique (Galaxy's Most Wanted)
         { id: "band_of_badoon", name: "Bande de Badoon", card_set_code: "band_of_badoon" },
@@ -455,7 +763,7 @@ const MARVEL_DB = {
         { id: "crime", name: "Crime", card_set_code: "crime" },
         { id: "fantasy", name: "Fantasy", card_set_code: "fantasy" },
         { id: "horror", name: "Horreur", card_set_code: "horror" },
-        { id: "sci_fi", name: "Science-Fiction", card_set_code: "sci_fi" },
+        { id: "sci_fi", name: "Science-Fiction", card_set_code: "sci-fi" },
         { id: "sitcom", name: "Sitcom", card_set_code: "sitcom" },
         { id: "western", name: "Western", card_set_code: "western" },
 
@@ -475,7 +783,15 @@ const MARVEL_DB = {
         { id: "infinites", name: "Les Infinis", card_set_code: "infinites" },
         { id: "prelates", name: "Les Prélats", card_set_code: "prelates" },
         { id: "savage_land", name: "Terre Sauvage", card_set_code: "savage_land" },
-        { id: "dark_riders", name: "Les Cavaliers de l'Ombre", card_set_code: "dark_riders" }
+        { id: "dark_riders", name: "Les Cavaliers de l'Ombre", card_set_code: "dark_riders" },
+
+        // --- Ajoutés automatiquement par generate_villains.py ---
+        { id: "military_grade", name: "Équipement Militaire", card_set_code: "military_grade" },
+        { id: "mutant_slayers", name: "Tueurs de Mutants", card_set_code: "mutant_slayers" },
+        { id: "hope_summers", name: "Hope Summers", card_set_code: "hope_summers" },
+        { id: "black_tom_cassidy", name: "Black Tom Cassidy", card_set_code: "black_tom_cassidy" },
+        { id: "dystopian_nightmare", name: "Cauchemar Dystopique", card_set_code: "dystopian_nightmare" },
+        { id: "celestial_tech", name: "Technologie Céleste", card_set_code: "celestial_tech" }
     ],
 
     // --- SETS DE DIFFICULTÉ ---

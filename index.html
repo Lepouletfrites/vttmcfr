@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marvel Champions - VTT Solo</title>
-    <link rel="stylesheet" href="style.css?v=6.6">
+    <meta name="theme-color" content="#0f1622">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MC VTT">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="style.css?v=6.8">
 </head>
 <body>
     
@@ -16,15 +24,11 @@
             <button id="btn-add-nemesis" class="btn-nemesis hidden">😈 Ajouter Némésis</button>
 
             <!-- Traqueur de Héros -->
-            <div id="hero-tracker" class="hidden">
-                <div class="tracker-item">
-                    <span class="tracker-label">PV Héros:</span>
-                    <input type="number" id="hero-hp-input" value="0" min="0">
-                </div>
-                <div class="tracker-item">
-                    <span class="tracker-label">Taille de Main:</span>
-                    <span id="hero-hand-size" class="tracker-value">0</span>
-                </div>
+            <div id="hero-tracker" class="hidden" title="Taille de main de la face visible du héros (mémorisée séparément pour chaque face)">
+                <span class="tracker-label">Taille de main</span>
+                <button id="hand-size-minus" class="tracker-btn" aria-label="Diminuer la taille de main">−</button>
+                <span id="hero-hand-size" class="tracker-value">0</span>
+                <button id="hand-size-plus" class="tracker-btn" aria-label="Augmenter la taille de main">+</button>
             </div>
         </div>
 
@@ -155,86 +159,203 @@
 
     <!-- MODALE DU MENU PRINCIPAL -->
     <div id="modal-menu" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content menu-modal">
             <div class="modal-header">
-                <h3>Menu Principal</h3>
-                <button id="modal-menu-close">&times;</button>
+                <h3>Menu</h3>
+                <button id="modal-menu-close" aria-label="Fermer">&times;</button>
             </div>
-            <div class="menu-content-wrap">
 
-                <div class="menu-section">
-                    <h4 class="menu-section-accent">🔗 Charger un Deck personnalisé</h4>
-                    <input type="text" id="deck-url-input" class="deck-url-input" placeholder="Ex: URL MarvelCDB ou ID (ex: 63906)">
-                    <button id="btn-load-custom-deck" class="btn-block btn-success">Charger via URL</button>
+            <nav class="menu-tabs" role="tablist">
+                <button class="menu-tab active" data-tab="hero" role="tab">🦸 <span>Héros</span></button>
+                <button class="menu-tab" data-tab="builder" role="tab">🛠️ <span>Deck</span></button>
+                <button class="menu-tab" data-tab="scenario" role="tab">🦹 <span>Scénario</span></button>
+                <button class="menu-tab" data-tab="card" role="tab">🃏 <span>Carte</span></button>
+                <button class="menu-tab" data-tab="game" role="tab">💾 <span>Partie</span></button>
+            </nav>
 
-                    <div id="saved-decks-wrap" class="hidden">
-                        <label class="menu-label saved-decks-label">Decks sauvegardés :</label>
-                        <div id="saved-decks-list" class="saved-decks-list"></div>
+            <!-- ONGLET HÉROS -->
+            <section class="menu-panel active" data-panel="hero">
+                <div>
+                    <h4 class="menu-subtitle">Ajouter un deck MarvelCDB</h4>
+                    <div class="inline-form">
+                        <input type="text" id="deck-url-input" class="deck-url-input" placeholder="Lien MarvelCDB ou ID du deck (ex : 63906)">
+                        <button id="btn-save-cdb-deck" class="btn-save" title="Enregistrer dans Mes decks sans lancer la partie">💾 Enregistrer</button>
+                        <button id="btn-load-custom-deck" class="btn-success">Charger</button>
+                    </div>
+                    <p class="menu-hint menu-hint-tight">Les decks enregistrés restent jouables sans connexion. Pour créer votre propre deck, allez dans l'onglet 🛠️ Deck.</p>
+                </div>
+
+                <div id="saved-decks-wrap" class="hidden">
+                    <h4 class="menu-subtitle">Mes decks</h4>
+                    <div id="saved-decks-list" class="saved-decks-list"></div>
+                </div>
+            </section>
+
+            <!-- ONGLET CRÉATION DE DECK -->
+            <section class="menu-panel" data-panel="builder">
+                <div class="db-top">
+                    <select id="db-hero" class="menu-select db-hero-select" aria-label="Héros"></select>
+                    <input type="text" id="db-name" class="deck-url-input" placeholder="Nom du deck">
+                </div>
+                <div class="db-aspects" id="db-aspects">
+                    <!-- Aspects injectés par le JS -->
+                </div>
+
+                <div class="db-layout">
+                    <div class="db-browser">
+                        <div class="db-filters">
+                            <input type="text" id="db-search" class="deck-url-input" placeholder="🔍 Nom, trait ou texte…">
+                            <div class="db-filter-row">
+                                <select id="db-type" class="menu-select" aria-label="Type">
+                                    <option value="">Tous les types</option>
+                                    <option value="ally">Alliés</option>
+                                    <option value="event">Événements</option>
+                                    <option value="upgrade">Améliorations</option>
+                                    <option value="support">Soutiens</option>
+                                    <option value="resource">Ressources</option>
+                                    <option value="player_side_scheme">Manigances annexes</option>
+                                </select>
+                                <select id="db-faction" class="menu-select" aria-label="Aspect"></select>
+                                <select id="db-cost" class="menu-select" aria-label="Coût">
+                                    <option value="">Tous coûts</option>
+                                    <option value="0">Coût 0</option><option value="1">Coût 1</option>
+                                    <option value="2">Coût 2</option><option value="3">Coût 3</option>
+                                    <option value="4">Coût 4+</option>
+                                </select>
+                                <select id="db-pack" class="menu-select" aria-label="Extension"></select>
+                            </div>
+                            <label class="db-check"><input type="checkbox" id="db-only-deck"> Seulement les cartes du deck</label>
+                        </div>
+                        <div id="db-results" class="db-results"></div>
+                        <button id="db-more" class="db-more hidden">Afficher plus</button>
+                    </div>
+
+                    <aside class="db-deck">
+                        <div class="db-deck-head">
+                            <span id="db-count" class="db-count">0 / 40</span>
+                            <span id="db-count-hint" class="db-count-hint"></span>
+                        </div>
+                        <div id="db-deck-list" class="db-deck-list"></div>
+                        <div class="db-deck-actions">
+                            <button id="db-new" class="btn-flex db-secondary" title="Vider et recommencer">Nouveau</button>
+                            <button id="db-save" class="btn-flex btn-save">💾 Enregistrer</button>
+                            <button id="db-play" class="btn-flex btn-success">▶ Jouer</button>
+                        </div>
+                    </aside>
+                </div>
+
+                <!-- Aperçu d'une carte (clic sur une carte de la liste ou du deck) -->
+                <div id="db-preview" class="db-preview hidden" role="dialog" aria-label="Aperçu de la carte">
+                    <div class="db-preview-box">
+                        <button class="db-preview-close" id="db-preview-close" aria-label="Fermer">&times;</button>
+                        <button class="db-preview-nav prev" id="db-preview-prev" aria-label="Carte précédente">‹</button>
+                        <div class="db-preview-img"><img id="db-preview-img" alt=""></div>
+                        <div class="db-preview-info">
+                            <h3 id="db-preview-name"></h3>
+                            <div id="db-preview-tags" class="db-preview-tags"></div>
+                            <div id="db-preview-text" class="db-preview-text"></div>
+                            <div id="db-preview-foot" class="db-preview-foot"></div>
+                            <div class="db-preview-ctrl">
+                                <button id="db-preview-sub" aria-label="Retirer du deck">−</button>
+                                <span id="db-preview-count"></span>
+                                <button id="db-preview-add" aria-label="Ajouter au deck">+</button>
+                            </div>
+                        </div>
+                        <button class="db-preview-nav next" id="db-preview-next" aria-label="Carte suivante">›</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ONGLET SCÉNARIO -->
+            <section class="menu-panel" data-panel="scenario">
+                <div class="menu-step">
+                    <h4 class="menu-subtitle"><span class="step-num">1</span> Méchant</h4>
+                    <input type="text" id="villain-search" class="deck-url-input" placeholder="🔍 Rechercher un méchant…">
+                    <div id="villain-picker" class="villain-picker"></div>
+                </div>
+
+                <div class="menu-step">
+                    <h4 class="menu-subtitle"><span class="step-num">2</span> Difficulté</h4>
+                    <div class="seg-row">
+                        <span class="seg-label">Standard</span>
+                        <div class="seg">
+                            <label><input type="radio" name="diff-std" value="none"><span>—</span></label>
+                            <label><input type="radio" name="diff-std" value="standard_1" checked><span>I</span></label>
+                            <label><input type="radio" name="diff-std" value="standard_2"><span>II</span></label>
+                            <label><input type="radio" name="diff-std" value="standard_3"><span>III</span></label>
+                        </div>
+                    </div>
+                    <div class="seg-row">
+                        <span class="seg-label">Expert</span>
+                        <div class="seg seg-expert">
+                            <label><input type="radio" name="diff-exp" value="none" checked><span>—</span></label>
+                            <label><input type="radio" name="diff-exp" value="expert_1"><span>I</span></label>
+                            <label><input type="radio" name="diff-exp" value="expert_2"><span>II</span></label>
+                        </div>
                     </div>
                 </div>
 
-                <div class="menu-section">
-                    <h4 class="menu-section-red">🎯 Mise en place du Scénario</h4>
-
-                    <label class="menu-label">Méchant :</label>
-                    <input type="text" id="villain-search" class="deck-url-input" placeholder="🔍 Rechercher un méchant...">
-                    <div id="villain-picker" class="villain-picker"></div>
-
-                    <label class="menu-label">Set de Difficulté :</label>
-                    <div class="difficulty-box">
-                        <div class="difficulty-row">
-                            <b class="difficulty-label-std">Standard:</b>
-                            <label><input type="radio" name="diff-std" value="none"> Aucun</label>
-                            <label><input type="radio" name="diff-std" value="standard_1" checked> I</label>
-                            <label><input type="radio" name="diff-std" value="standard_2"> II</label>
-                            <label><input type="radio" name="diff-std" value="standard_3"> III</label>
-                        </div>
-                        <div class="difficulty-row">
-                            <b class="difficulty-label-exp">Expert:</b>
-                            <label><input type="radio" name="diff-exp" value="none" checked> Aucun</label>
-                            <label><input type="radio" name="diff-exp" value="expert_1"> I</label>
-                            <label><input type="radio" name="diff-exp" value="expert_2"> II</label>
-                        </div>
-                    </div>
-
-                    <label class="menu-label">Sets Modulaires :</label>
+                <div class="menu-step">
+                    <h4 class="menu-subtitle"><span class="step-num">3</span> Modulaires <span id="modular-count" class="menu-badge"></span></h4>
+                    <input type="text" id="modular-search" class="deck-url-input" placeholder="🔍 Filtrer les modulaires…">
                     <div id="modular-list" class="modular-list">
                         <!-- Les options seront injectées ici par le Javascript -->
                     </div>
-
-                    <button id="btn-load-villain" class="btn-block btn-nemesis btn-mt">Déployer le Scénario</button>
                 </div>
 
-                <div class="menu-section">
-                    <h4 class="menu-section-accent">🔎 Ajouter une Carte</h4>
-                    <p class="menu-hint">Pour ajouter en jeu une carte qui n'est pas dans le deck (ex: token spécial, carte manquante). Tapez au moins 3 lettres du nom pour lancer la recherche.</p>
-                    <input type="text" id="card-search-input" class="deck-url-input" placeholder="🔍 Nom de la carte (3 lettres min.)...">
-                    <div id="card-search-results" class="villain-picker hidden"></div>
+                <div class="menu-sticky-footer">
+                    <div id="scenario-summary" class="scenario-summary">Choisissez un méchant</div>
+                    <button id="btn-load-villain" class="btn-nemesis">Déployer ▶</button>
                 </div>
+            </section>
 
-                <div class="menu-section">
-                    <h4 class="menu-section-accent">☁️ Sauvegarde Fichier (JSON)</h4>
-                    <p class="menu-hint">Exportez votre partie dans un fichier pour la reprendre sur un autre appareil, ou en cas de souci avec le navigateur.</p>
-                    <div class="menu-footer-actions">
-                        <button id="btn-export-save" class="btn-flex">⬇️ Exporter</button>
-                        <button id="btn-import-save" class="btn-flex">⬆️ Importer</button>
-                    </div>
-                    <input type="file" id="import-save-input" accept="application/json" class="hidden">
-                </div>
+            <!-- ONGLET CARTE -->
+            <section class="menu-panel" data-panel="card">
+                <p class="menu-hint">Mettre en jeu une carte absente du deck (jeton spécial, carte manquante…). Tapez au moins 3 lettres.</p>
+                <input type="text" id="card-search-input" class="deck-url-input" placeholder="🔍 Nom de la carte…">
+                <div id="card-search-results" class="villain-picker hidden"></div>
+            </section>
 
-                <div class="menu-footer-actions">
-                    <button id="btn-save-game" class="btn-save btn-flex">💾 Sauvegarder</button>
-                    <button id="btn-reset-game" class="btn-danger btn-flex">⚠️ Réinitialiser</button>
+            <!-- ONGLET PARTIE -->
+            <section class="menu-panel" data-panel="game">
+                <div class="action-list">
+                    <button id="btn-save-game" class="action-row">
+                        <span class="action-icon">💾</span>
+                        <span class="action-text"><b>Sauvegarder</b><small>Dans ce navigateur (aussi automatique)</small></span>
+                    </button>
+                    <button id="btn-export-save" class="action-row">
+                        <span class="action-icon">⬇️</span>
+                        <span class="action-text"><b>Exporter</b><small>Télécharger la partie en fichier JSON</small></span>
+                    </button>
+                    <button id="btn-import-save" class="action-row">
+                        <span class="action-icon">⬆️</span>
+                        <span class="action-text"><b>Importer</b><small>Reprendre une partie depuis un fichier</small></span>
+                    </button>
+                    <button id="btn-reset-game" class="action-row action-danger">
+                        <span class="action-icon">⚠️</span>
+                        <span class="action-text"><b>Nouvelle partie</b><small>Tout effacer et recommencer</small></span>
+                    </button>
                 </div>
-            </div>
+                <input type="file" id="import-save-input" accept="application/json" class="hidden">
+            </section>
         </div>
     </div>
 
     <!-- Le paramètre ?v= force le navigateur à retélécharger ces fichiers après une mise à jour
          du jeu, au lieu de garder une version périmée en cache indéfiniment. Penser à l'incrémenter
-         (avec GAME_VERSION dans script.js) à chaque changement notable de script.js/gamedata.js/style.css. -->
-    <script src="gamedata.js?v=6.6"></script>
-    <script src="cards.js?v=6.6"></script>
-    <script src="script.js?v=6.6"></script>
+         à chaque changement notable (GAME_VERSION dans js/core.js seulement si le format de
+         sauvegarde change : le modifier efface la partie en cours).
+         L'ORDRE des scripts compte : chaque fichier utilise ce que les précédents ont déclaré. -->
+    <script src="gamedata.js?v=6.8"></script>
+    <script src="cards.js?v=6.8"></script>
+    <script src="js/core.js?v=6.8"></script>
+    <script src="js/menu.js?v=6.8"></script>
+    <script src="js/card-data.js?v=6.8"></script>
+    <script src="js/decks.js?v=6.8"></script>
+    <script src="js/scenario.js?v=6.8"></script>
+    <script src="js/gameplay.js?v=6.8"></script>
+    <script src="js/board.js?v=6.8"></script>
+    <script src="js/save.js?v=6.8"></script>
+    <script src="js/deckbuilder.js?v=6.8"></script>
 </body>
 </html>
